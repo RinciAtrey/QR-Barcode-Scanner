@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:qr_barcode/generate_barcode.dart';
 import 'package:qr_barcode/generate_qr_screen.dart';
-import 'package:qr_barcode/qr_scanner_screen.dart';
+import 'package:qr_barcode/scanner_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -47,6 +48,13 @@ class HomeScreen extends StatelessWidget {
                       "Scan QR Code",
                       Icons.qr_code_scanner,
                           ()=> Navigator.push(context, MaterialPageRoute(builder:(context)=>const QrScannerScreen()))
+                  ),
+                  SizedBox(height: 12),
+                  _buildFeatureButton(
+                      context,
+                      "Generate Barcode",
+                      Icons.barcode_reader,
+                          ()=> Navigator.push(context, MaterialPageRoute(builder:(context)=>const GenerateBarcode()))
                   )
                 ],
               ),
