@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../data/camera_data.dart';
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
@@ -9,9 +11,13 @@ class SettingsPage extends StatelessWidget {
     final box = Hive.box('settings');
 
     return ValueListenableBuilder<Box>(
-      valueListenable: box.listenable(keys: ['isDarkMode']),
+      valueListenable: box.listenable(
+        keys: ['isDarkMode', 'autoFlash', 'autoCopy'],
+      ),
       builder: (context, settingsBox, _) {
         final isDark = settingsBox.get('isDarkMode', defaultValue: false) as bool;
+        final autoFlash = settingsBox.get('autoFlash', defaultValue: false) as bool;
+        final autoCopy = settingsBox.get('autoCopy', defaultValue: false) as bool;
 
         return Scaffold(
           appBar: AppBar(title: const Text('Settings')),
@@ -19,10 +25,24 @@ class SettingsPage extends StatelessWidget {
             children: [
                ListTile(
                  title: Text('Camera'),
-                 //subtitle: Text('Manage your settings here'),
+            subtitle: ValueListenableBuilder<Box>(
+              valueListenable: Hive.box('settings').listenable(keys: ['cameraFacing']),
+              builder: (_, box, __) {
+                final k = box.get('cameraFacing',
+                    defaultValue: CameraFacingOption.back.key) as String;
+                final choice = CameraFacingOptionX.fromKey(k);
+                return Text(
+                  choice == CameraFacingOption.back ? 'Back Camera' : 'Front Camera',
+                  style: Theme.of(context).textTheme.bodySmall,
+                );
+              },
+            ),
                  trailing: Icon(Icons.arrow_forward_ios),
                  onTap: (){
-
+                   Navigator.push(
+                     context,
+                     MaterialPageRoute(builder: (_) => const CameraSettingsPage()),
+                   );
                  }
                ),
               SwitchListTile(
@@ -32,7 +52,63 @@ class SettingsPage extends StatelessWidget {
                   settingsBox.put('isDarkMode', val);
                 },
               ),
+              SwitchListTile(
+                title: const Text('Auto-Flash'),
+                value: settingsBox.get('autoFlash', defaultValue: false) as bool,
+                onChanged: (val) => settingsBox.put('autoFlash', val),
+              ),
+
+              SwitchListTile(
+                title: const Text('Auto-Copy'),
+                subtitle: const Text('Copy scan results to clipboard immediately'),
+                value: settingsBox.get('autoCopy', defaultValue: false) as bool,
+                onChanged: (val){
+                  settingsBox.put('autoCopy', val);
+                  debugPrint('autoFlash is now ${settingsBox.get('autoFlash')}');
+                }
+              ),
+
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
+class CameraSettingsPage extends StatelessWidget {
+  const CameraSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final box = Hive.box('settings');
+    return ValueListenableBuilder<Box>(
+      valueListenable: box.listenable(keys: ['cameraFacing']),
+      builder: (_, settingsBox, __) {
+        final currentKey = settingsBox.get(
+            'cameraFacing',
+            defaultValue: CameraFacingOption.back.key) as String;
+        final current = CameraFacingOptionX.fromKey(currentKey);
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('Camera')),
+          body: ListView(
+            children: CameraFacingOption.values.map((opt) {
+              final label = opt == CameraFacingOption.back
+                  ? 'Back Camera'
+                  : 'Front Camera';
+              return RadioListTile<CameraFacingOption>(
+                title: Text(label),
+                value: opt,
+                groupValue: current,
+                onChanged: (sel) {
+                  if (sel == null) return;
+                  settingsBox.put('cameraFacing', sel.key);
+                },
+              );
+            }).toList(),
           ),
         );
       },
