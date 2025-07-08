@@ -1,0 +1,1 @@
+enum CodeType { Text, Website, Contact ,Wifi, Call }

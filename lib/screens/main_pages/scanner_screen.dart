@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as contacts;
+import 'package:hive/hive.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_barcode/data/savedcode.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+import 'history_page.dart';
+
+
+class ScannerScreen extends StatefulWidget {
+  const ScannerScreen({super.key});
 
   @override
-  State<QrScannerScreen> createState() => _QrScannerScreenState();
+  State<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> {
+class _ScannerScreenState extends State<ScannerScreen> {
   bool hasPermission = false;
   bool isFlashOn = false;
 
@@ -30,6 +35,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     scannerController.dispose();
     super.dispose();
   }
+
 
   Future<void> _checkPermission() async {
     final status = await Permission.camera.request();
@@ -169,6 +175,19 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   ),
                 ),
           ),
+    );
+
+    // Save into the separate history box:
+    final historyBox = Hive.box<SavedCode>('scan_history');
+    await historyBox.add(SavedCode(
+      title: 'Scanned · ${DateTime.now().toLocal().toIso8601String()}',
+      isQr: true,
+    ));
+
+    // Then navigate to your HistoryPage:
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const HistoryPage()),
     );
   }
   Future<void> _launchURL(String url) async{

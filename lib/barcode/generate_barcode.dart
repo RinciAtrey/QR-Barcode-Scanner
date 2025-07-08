@@ -4,11 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:qr_barcode/barcode/preview_barcode_screen.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 class GenerateBarcode extends StatefulWidget {
-  const GenerateBarcode({super.key});
+  final int initialIndex;
+  const GenerateBarcode({
+    Key? key,
+    this.initialIndex = 0,
+  }) : super(key: key);
 
   @override
   State<GenerateBarcode> createState() => _GenerateBarcodeState();
@@ -17,8 +22,16 @@ class GenerateBarcode extends StatefulWidget {
 class _GenerateBarcodeState extends State<GenerateBarcode> {
   final TextEditingController _textController =TextEditingController();
   final ScreenshotController _screenshotController= ScreenshotController();
+  late int _selectedBarcodeIndex;
 
-
+  @override
+  void initState() {
+    super.initState();
+    _selectedBarcodeIndex = widget.initialIndex;
+    _barcodeData = _textController.text.isEmpty
+        ? "123456789"
+        : _textController.text;
+  }
 
   Future<void> _shareQRCode() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -34,11 +47,9 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
         text: 'Share a OR Code',
       ),
     );
-    //await Share.shareXFiles([XFile(imagePath)], text: "Share a OR Code");
   }
 
   String _barcodeData= '1234567890';
-  int _selectedBarcodeIndex=0;
   final List<BarcodeOption> _barcodeTypes= [
     BarcodeOption('Code 128', Barcode.code128()),
     BarcodeOption('Code 39', Barcode.code39()),
@@ -46,7 +57,6 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
     BarcodeOption('EAN-13', Barcode.ean8()),
     BarcodeOption('EAN-8', Barcode.upcA()),
     BarcodeOption('UPC-E', Barcode.upcA()),
-    BarcodeOption('QR Code', Barcode.qrCode()),
     BarcodeOption('Data Matrix', Barcode.dataMatrix()),
     BarcodeOption('PDF417', Barcode.pdf417()),
   ];
@@ -132,6 +142,25 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
         elevation: 0,
         backgroundColor: Colors.blue.shade600,
         foregroundColor: Colors.white,
+        actions: [
+          TextButton(
+            onPressed: () {
+              final str = _textController.text.trim().isEmpty
+                  ? _barcodeData
+                  : _textController.text.trim();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PreviewBarcodeScreen(
+                    type: _barcodeTypes[_selectedBarcodeIndex],
+                    data: str,
+                  ),
+                ),
+              );
+            },
+            child: const Text('Create',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
       body: Container(
         height: double.infinity,

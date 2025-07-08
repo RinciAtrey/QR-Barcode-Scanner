@@ -1,0 +1,223 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:qr_barcode/qr/preview_qr_screen.dart';
+import 'package:qr_barcode/qr/qr_ui.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'qr_code_type.dart';
+
+class QrGeneratorScreen extends StatefulWidget {
+  final CodeType initialType;
+  const QrGeneratorScreen({super.key, this.initialType = CodeType.Text});
+
+  @override
+  State<QrGeneratorScreen> createState() => _QrGeneratorScreenState();
+}
+
+class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
+  late CodeType selectedType;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedType = widget.initialType;
+  }
+
+  final TextEditingController _textEditingController = TextEditingController();
+  final ScreenshotController _screenshotController = ScreenshotController();
+  String qrData = '';
+
+  final Map<String, TextEditingController> _controllers = {
+    'name': TextEditingController(),
+    'phone': TextEditingController(),
+    'email': TextEditingController(),
+    'url': TextEditingController(),
+    'ssid': TextEditingController(),
+    'wifipass': TextEditingController(),
+    'call': TextEditingController(),
+  };
+
+  String _generateQRData() {
+    switch (selectedType) {
+      case CodeType.Contact:
+        return '''BEGIN:VCARD
+VERSION:3.0
+FN:${_controllers['name']!.text}
+TEL:${_controllers['phone']!.text}
+EMAIL:${_controllers['email']!.text}
+END:VCARD''';
+      case CodeType.Website:
+        String url = _controllers['url']!.text.trim();
+        if (url.isEmpty) return '';
+        if (!url.startsWith(RegExp(r'https?://'))) url = 'https://$url';
+        return url;
+      case CodeType.Wifi:
+        final ssid = _controllers['ssid']!.text;
+        final pass = _controllers['wifipass']!.text;
+        return 'WIFI:S:$ssid;T:WPA;P:$pass;;';
+      case CodeType.Call:
+        final num = _controllers['call']!.text;
+        return 'TEL:$num';
+      case CodeType.Text:
+      default:
+        return _textEditingController.text;
+    }
+  }
+
+  Future<void> _shareQRCode() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final path = '${dir.path}/qr_code.png';
+    final capture = await _screenshotController.capture();
+    if (capture == null) return;
+
+    final file = File(path)..writeAsBytesSync(capture);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(path)], text: 'QR Code'),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // ← BUILT formWidget USING selectedType
+    late Widget formWidget;
+    switch (selectedType) {
+      case CodeType.Text:
+        formWidget = TextForm(
+          _textEditingController,
+              (v) => setState(() => qrData = _generateQRData()),
+        );
+        break;
+      case CodeType.Website:
+        formWidget = UrlForm(
+          _controllers['url']!,
+              (v) => setState(() => qrData = _generateQRData()),
+        );
+        break;
+      case CodeType.Contact:
+        formWidget = ContactForm(
+          {
+            'name': _controllers['name']!,
+            'email': _controllers['email']!,
+            'phone': _controllers['phone']!,
+          },
+              (v) => setState(() => qrData = _generateQRData()),
+        );
+        break;
+      case CodeType.Wifi:
+        formWidget = WifiForm(
+          _controllers['ssid']!,
+          _controllers['wifipass']!,
+              (v) => setState(() => qrData = _generateQRData()),
+        );
+        break;
+      case CodeType.Call:
+        formWidget = CallForm(
+          _controllers['call']!,
+              (v) => setState(() => qrData = _generateQRData()),
+        );
+        break;
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.indigo,
+      appBar: AppBar(
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text("Generate QR Code"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final data = _generateQRData();
+              if (data.isEmpty) return;
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PreviewScreen(
+                    title: selectedType.name,
+                    data: data,
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              'Create',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      body: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Card(
+              color: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    formWidget,
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (qrData.isNotEmpty)
+              Column(
+                children: [
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Screenshot(
+                        controller: _screenshotController,
+                        child: Container(
+                          color: Colors.white,
+                          padding: const EdgeInsets.all(16),
+                          child: QrImageView(
+                            data: qrData,
+                            version: QrVersions.auto,
+                            size: 200,
+                            errorCorrectionLevel: QrErrorCorrectLevel.H,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _shareQRCode,
+                    icon: const Icon(Icons.share),
+                    label: const Text("Share QR Code"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
