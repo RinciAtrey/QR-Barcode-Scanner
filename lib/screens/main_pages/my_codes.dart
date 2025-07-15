@@ -120,7 +120,7 @@ class _MyCodesState extends State<MyCodes> {
                                 ? QrImageView(
                               data: " ",
                               version: QrVersions.auto,
-                              size: 50,                // <-- bigger QR inside
+                              size: 50,
                               backgroundColor: Colors.white,
                             )
                                 : BarcodeWidget(
@@ -143,7 +143,7 @@ class _MyCodesState extends State<MyCodes> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => PreviewScreen(
+                                  builder: (_) => QRPreviewScreen(
                                     title: 'QR code · ${c.title}',
                                     data: '',
                                   ),

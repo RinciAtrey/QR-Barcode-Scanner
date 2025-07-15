@@ -81,7 +81,6 @@ END:VCARD''';
 
   @override
   Widget build(BuildContext context) {
-    // ← BUILT formWidget USING selectedType
     late Widget formWidget;
     switch (selectedType) {
       case CodeType.Text:
@@ -133,11 +132,17 @@ END:VCARD''';
             onPressed: () {
               final data = _generateQRData();
               if (data.isEmpty) return;
+
+              final displayFields = <String,String>{
+                'Phone': _controllers['phone']!.text,
+                // add more if you like: 'Email': _controllers['email']!.text,
+              };
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => PreviewScreen(
+                  builder: (_) => QRPreviewScreen(
                     title: selectedType.name,
                     data: data,
+                    displayFields: displayFields,
                   ),
                 ),
               );

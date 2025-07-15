@@ -5,10 +5,11 @@ import 'package:share_plus/share_plus.dart';
 
 import '../data/savedcode.dart';
 
-class PreviewScreen extends StatelessWidget {
+class QRPreviewScreen extends StatelessWidget {
   final String title;
   final String data;
-  const PreviewScreen({super.key, required this.title, required this.data});
+  final Map<String, String> displayFields;
+  const QRPreviewScreen({super.key, required this.title, required this.data, this.displayFields=const {}});
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +43,35 @@ class PreviewScreen extends StatelessWidget {
         ],
       ),
       body: Center(
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: QrImageView(data: data, version: QrVersions.auto, size: 250),
+        child: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: QrImageView(data: data, version: QrVersions.auto, size: 250),
+            ),
+            const SizedBox(height: 12,),
+            ...displayFields.entries.map((e) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${e.key}: ',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SelectableText(
+                    e.value,
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            )),
+          ],
         ),
+
       ),
     );
   }
