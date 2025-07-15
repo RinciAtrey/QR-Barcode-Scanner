@@ -57,7 +57,6 @@ class QRPreviewScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // render only non-empty fields:
               for (final entry in displayFields.entries)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),

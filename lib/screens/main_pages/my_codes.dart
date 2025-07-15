@@ -46,6 +46,26 @@ class _MyCodesState extends State<MyCodes> {
   final _box = Hive.box<SavedCode>('saved_codes');
   String _search = '';
 
+
+
+  void _deleteAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete all codes?'),
+        content: const Text('This will remove every saved code.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true),  child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await _box.clear();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All codes deleted')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -63,6 +83,13 @@ class _MyCodesState extends State<MyCodes> {
               );
             },
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete_rounded),
+              tooltip: 'Delete all',
+              onPressed: _deleteAll,
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -118,13 +145,13 @@ class _MyCodesState extends State<MyCodes> {
                             alignment: Alignment.center,
                             child: c.isQr
                                 ? QrImageView(
-                              data: " ",
+                              data: c.data,
                               version: QrVersions.auto,
                               size: 50,
                               backgroundColor: Colors.white,
                             )
                                 : BarcodeWidget(
-                              data: '',
+                              data: c.data,
                               barcode: _barcodeFromName(c.title),
                               width: 110,
                               height: 80,
@@ -138,30 +165,42 @@ class _MyCodesState extends State<MyCodes> {
                                 ? 'QR code · ${c.title}'
                                 : 'Barcode · ${c.title}',
                           ),
-                          subtitle: Text(
-                            c.data,                  // ← show the actual encoded string
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          subtitle: Builder(builder: (_) {
+                            final fields = _fieldsFromSaved(c);
+                            final firstValue = fields.values.isNotEmpty
+                                ? fields.values.first
+                                : '';
+                            return Text(
+                              firstValue,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }),
                           onTap: () {
+                            final fields = c.isQr
+                                ? _fieldsFromQr(c)
+                                : <String,String>{ 'Data': c.data };
                             if (c.isQr) {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => QRPreviewScreen(
-                                    title: 'QR code · ${c.title}',
-                                    data: '',
+                                    title: '${c.title}',
+                                      data: c.data,
+                                      displayFields: fields
                                   ),
                                 ),
                               );
                             } else {
+                              final fields = <String,String>{ 'Data': c.data };
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => PreviewBarcodeScreen(
                                     type: BarcodeOption(
                                         c.title, _barcodeFromName(c.title)),
-                                    data: '',
+                                      data: c.data,
+                                      displayFields: fields
                                   ),
                                 ),
                               );
@@ -181,6 +220,67 @@ class _MyCodesState extends State<MyCodes> {
   }
 }
 
+Map<String,String> _fieldsFromQr(SavedCode c) {
+  final m = <String,String>{};
+
+  // 1) Contact
+  if (c.title.contains('Contact')) {
+    for (final line in c.data.split('\n')) {
+      if (line.startsWith('FN:'))    m['Name']  = line.substring(3);
+      if (line.startsWith('TEL:'))   m['Phone'] = line.substring(4);
+      if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
+    }
+
+    // 2) Wi‑Fi
+  } else if (c.title.toLowerCase().contains('wifi')) {
+    final ssidMatch = RegExp(r'S:([^;]+);').firstMatch(c.data);
+    final passMatch = RegExp(r'P:([^;]+);').firstMatch(c.data);
+    if (ssidMatch != null) m['SSID']     = ssidMatch.group(1)!;
+    if (passMatch != null) m['Password'] = passMatch.group(1)!;
+
+    // 3) Telephone
+  } else if (c.title.toLowerCase().contains('call')) {
+    m['Number'] = c.data.replaceFirst('TEL:', '');
+
+    // 4) Website
+  } else if (c.title.toLowerCase().contains('website')) {
+    m['URL'] = c.data;
+
+    // 5) Plain Text
+  } else {
+    m['Text'] = c.data;
+  }
+
+  return m;
+}
+
+
+Map<String,String> _fieldsFromSaved(SavedCode c) {
+  if (!c.isQr) {
+    return { 'Data': c.data };
+  }
+
+  // QR codes:
+  final m = <String,String>{};
+  if (c.title.contains('Contact')) {
+    for (final line in c.data.split('\n')) {
+      if (line.startsWith('FN:'))    m['Name']  = line.substring(3);
+      if (line.startsWith('TEL:'))   m['Phone'] = line.substring(4);
+      if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
+    }
+  } else if (c.title.contains('Wifi')) {
+    final ssidMatch = RegExp(r'S:([^;]+);').firstMatch(c.data);
+    final passMatch = RegExp(r'P:([^;]+);').firstMatch(c.data);
+    if (ssidMatch  != null) m['SSID']     = ssidMatch .group(1)!;
+    if (passMatch  != null) m['Password'] = passMatch .group(1)!;
+  } else if (c.title.contains('Call')) {
+    m['Number'] = c.data.replaceFirst('TEL:', '');
+  } else {
+    //show everything
+    m['Data'] = c.data;
+  }
+  return m;
+}
 
 
 

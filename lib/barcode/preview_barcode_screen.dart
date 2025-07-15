@@ -87,11 +87,21 @@ class PreviewBarcodeScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BarcodeWidget(
-              data: data,
-              barcode: type.barcode,
-              width: 200,
-              height: 80,
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: BarcodeWidget(
+                data: data,
+                barcode: type.barcode,
+                width: 250,
+                height: 80,
+                drawText: true,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 12,
+                ),
+                backgroundColor: Colors.white,
+              ),
             ),
             const SizedBox(height: 16),
             for (final entry in displayFields.entries)
@@ -102,9 +112,11 @@ class PreviewBarcodeScreen extends StatelessWidget {
                   children: [
                     Text(
                       '${entry.key}: ',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.white,
+                          fontWeight: FontWeight.bold),
                     ),
-                    SelectableText(entry.value),
+                    SelectableText(entry.value,
+                        style: const TextStyle(color: Colors.white)),
                   ],
                 ),
               ),

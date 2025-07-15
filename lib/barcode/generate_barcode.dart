@@ -145,14 +145,16 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
         actions: [
           TextButton(
             onPressed: () {
-              final str = _textController.text.trim().isEmpty
-                  ? _barcodeData
-                  : _textController.text.trim();
+              final displayFields = <String,String>{
+                'Data': _barcodeData,
+              };
+
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PreviewBarcodeScreen(
                     type: _barcodeTypes[_selectedBarcodeIndex],
-                    data: str,
+                    data: _barcodeData,
+                    displayFields: displayFields,
                   ),
                 ),
               );
