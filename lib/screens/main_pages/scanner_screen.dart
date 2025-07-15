@@ -228,6 +228,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     await historyBox.add(SavedCode(
       title: 'Scanned · ${DateTime.now().toLocal().toIso8601String()}',
       isQr: true,
+        data: data
     ));
 
     Navigator.of(context).popUntil((r) => r.isFirst);

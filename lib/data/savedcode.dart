@@ -11,10 +11,14 @@ class SavedCode extends HiveObject {
   bool isQr;           // true = QR, false = barcode
 
   @HiveField(2)
+  String data;
+
+  @HiveField(3)
   DateTime createdAt;  // timestamp
 
   SavedCode({
     required this.title,
     required this.isQr,
+    required this.data,
   }) : createdAt = DateTime.now();
 }

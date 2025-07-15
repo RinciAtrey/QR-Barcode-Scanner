@@ -1,6 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'savedcode.dart';
 
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
 
 class SavedCodeAdapter extends TypeAdapter<SavedCode> {
   @override
@@ -15,18 +19,21 @@ class SavedCodeAdapter extends TypeAdapter<SavedCode> {
     return SavedCode(
       title: fields[0] as String,
       isQr: fields[1] as bool,
-    )..createdAt = fields[2] as DateTime;
+      data: fields[2] as String,
+    )..createdAt = fields[3] as DateTime;
   }
 
   @override
   void write(BinaryWriter writer, SavedCode obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
       ..write(obj.isQr)
       ..writeByte(2)
+      ..write(obj.data)
+      ..writeByte(3)
       ..write(obj.createdAt);
   }
 

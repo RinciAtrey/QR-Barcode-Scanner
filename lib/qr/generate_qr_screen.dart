@@ -67,6 +67,43 @@ END:VCARD''';
     }
   }
 
+  Map<String, String> _makeDisplayFields() {
+    final m = <String, String>{};
+    switch (selectedType) {
+      case CodeType.Text:
+        final t = _textEditingController.text.trim();
+        if (t.isNotEmpty) m['Text'] = t;
+        break;
+      case CodeType.Website:
+        var url = _controllers['url']!.text.trim();
+        if (url.isNotEmpty) {
+          if (!url.startsWith(RegExp(r'https?://'))) url = 'https://$url';
+          m['URL'] = url;
+        }
+        break;
+      case CodeType.Contact:
+        final name  = _controllers['name']!.text.trim();
+        final phone = _controllers['phone']!.text.trim();
+        final email = _controllers['email']!.text.trim();
+        if (name.isNotEmpty)  m['Name']  = name;
+        if (phone.isNotEmpty) m['Phone'] = phone;
+        if (email.isNotEmpty) m['Email'] = email;
+        break;
+      case CodeType.Wifi:
+        final ssid = _controllers['ssid']!.text.trim();
+        final pass = _controllers['wifipass']!.text.trim();
+        if (ssid.isNotEmpty) m['SSID']     = ssid;
+        if (pass.isNotEmpty) m['Password'] = pass;
+        break;
+      case CodeType.Call:
+        final num = _controllers['call']!.text.trim();
+        if (num.isNotEmpty) m['Number'] = num;
+        break;
+    }
+    return m;
+  }
+
+
   Future<void> _shareQRCode() async {
     final dir = await getApplicationDocumentsDirectory();
     final path = '${dir.path}/qr_code.png';
@@ -133,10 +170,8 @@ END:VCARD''';
               final data = _generateQRData();
               if (data.isEmpty) return;
 
-              final displayFields = <String,String>{
-                'Phone': _controllers['phone']!.text,
-                // add more if you like: 'Email': _controllers['email']!.text,
-              };
+              final displayFields = _makeDisplayFields();
+
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => QRPreviewScreen(

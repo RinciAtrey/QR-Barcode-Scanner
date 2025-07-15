@@ -138,6 +138,11 @@ class _MyCodesState extends State<MyCodes> {
                                 ? 'QR code · ${c.title}'
                                 : 'Barcode · ${c.title}',
                           ),
+                          subtitle: Text(
+                            c.data,                  // ← show the actual encoded string
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           onTap: () {
                             if (c.isQr) {
                               Navigator.push(

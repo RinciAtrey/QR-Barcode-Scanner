@@ -33,6 +33,7 @@ class QRPreviewScreen extends StatelessWidget {
               await box.add(SavedCode(
                 title: title,
                 isQr: true,
+                  data: data
               ));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('QR code saved')),
@@ -42,37 +43,44 @@ class QRPreviewScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: QrImageView(data: data, version: QrVersions.auto, size: 250),
-            ),
-            const SizedBox(height: 12,),
-            ...displayFields.entries.map((e) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('${e.key}: ',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SelectableText(
-                    e.value,
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: QrImageView(
+                  data: data,
+                  version: QrVersions.auto,
+                  size: 250,
+                ),
               ),
-            )),
-          ],
-        ),
-
-      ),
+              const SizedBox(height: 16),
+              // render only non-empty fields:
+              for (final entry in displayFields.entries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${entry.key}: ',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SelectableText(
+                        entry.value,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        )
     );
   }
   }

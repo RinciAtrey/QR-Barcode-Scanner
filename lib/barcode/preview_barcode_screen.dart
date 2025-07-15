@@ -1,5 +1,3 @@
-// preview_barcode_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,15 +9,16 @@ import 'generate_barcode.dart';
 import 'package:hive/hive.dart';
 
 
-
 class PreviewBarcodeScreen extends StatelessWidget {
   final BarcodeOption type;
   final String data;
+  final Map<String, String> displayFields;
 
   const PreviewBarcodeScreen({
     Key? key,
     required this.type,
     required this.data,
+    this.displayFields = const {},
   }) : super(key: key);
 
 
@@ -71,8 +70,9 @@ class PreviewBarcodeScreen extends StatelessWidget {
             onPressed: () async {
               final box = Hive.box<SavedCode>('saved_codes');
               await box.add(SavedCode(
-                title: type.name,
-                isQr: false,
+                  title: type.name,
+                  isQr: false,
+                  data: data
               ));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Barcode saved')),
@@ -84,15 +84,31 @@ class PreviewBarcodeScreen extends StatelessWidget {
         ],
       ),
       body: Center(
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: BarcodeWidget(
-            data: data,
-            barcode: type.barcode,
-            width: 300,
-            height: 170,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BarcodeWidget(
+              data: data,
+              barcode: type.barcode,
+              width: 200,
+              height: 80,
+            ),
+            const SizedBox(height: 16),
+            for (final entry in displayFields.entries)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${entry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SelectableText(entry.value),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
