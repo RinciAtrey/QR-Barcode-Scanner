@@ -4,17 +4,19 @@ import 'package:flutter_contacts/flutter_contacts.dart' as contacts;
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:barcode_widget/barcode_widget.dart' as bcw;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:qr_barcode/data/savedcode.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:intl/intl.dart';
 import '../../data/camera_data.dart';
+import '../../data/scannedcode.dart';
+import '../scannedBarcodePreview.dart';
+import '../scannedQrPreview.dart';
 import 'history_page.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
-
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
 }
@@ -23,19 +25,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
   bool hasPermission = false;
   bool isFlashOn = false;
   MobileScannerController? scannerController;
-
   late CameraFacingOption currentFacing;
   late VoidCallback _cameraFacingListener;
+
+
 
   @override
   void initState() {
     super.initState();
-
     final box = Hive.box('settings');
     currentFacing = CameraFacingOptionX.fromKey(
       box.get('cameraFacing', defaultValue: CameraFacingOption.back.key) as String,
     );
-
     _cameraFacingListener = () {
       final newKey = box.get('cameraFacing') as String;
       final newFacing = CameraFacingOptionX.fromKey(newKey);
@@ -45,7 +46,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
       }
     };
     box.listenable(keys: ['cameraFacing']).addListener(_cameraFacingListener);
-
     _initScanner();
   }
 
@@ -61,28 +61,21 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Future<void> _initScanner() async {
     final status = await Permission.camera.request();
     if (!mounted) return;
-
     if (status.isGranted) {
-      setState(() => hasPermission = true);
-
       scannerController = MobileScannerController(
         facing: currentFacing == CameraFacingOption.back
             ? CameraFacing.back
             : CameraFacing.front,
       );
-
-      // explicitly start the camera preview
-      await scannerController!.start();
-
-      // now it’s safe to toggle the torch
-      final autoFlash = Hive.box('settings')
-          .get('autoFlash', defaultValue: false) as bool;
-      if (autoFlash) {
-        await scannerController!.toggleTorch();
-        setState(() => isFlashOn = true);
-      }
-
-      setState(() {});
+      final autoFlash =
+      Hive.box('settings').get('autoFlash', defaultValue: false) as bool;
+      if (autoFlash) isFlashOn = true;
+      setState(() => hasPermission = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await scannerController?.start();
+        if (autoFlash) await scannerController?.toggleTorch();
+      });
     } else if (status.isPermanentlyDenied) {
       setState(() => hasPermission = false);
       await showDialog(
@@ -95,16 +88,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                openAppSettings();
-                Navigator.of(ctx).pop();
-              },
-              child: const Text('Open Settings'),
-            ),
+                onPressed: () {
+                  openAppSettings();
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text('Open Settings')),
             TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel')),
           ],
         ),
       );
@@ -113,153 +104,111 @@ class _ScannerScreenState extends State<ScannerScreen> {
     }
   }
 
-  Future<void> _processScanneddata(String? data) async {
-    if (data == null) return;
-    scannerController?.stop();
+  Future<void> _processScannedData(
+      String data,
+      bool isQr,
+      String displayTitle,
+      String formatName,
+      ) async {
+    await scannerController?.stop();
 
-    final autoCopy = Hive.box('settings').get('autoCopy', defaultValue: false) as bool;
+    final autoCopy =
+    Hive.box('settings').get('autoCopy', defaultValue: false) as bool;
     if (autoCopy) {
       await Clipboard.setData(ClipboardData(text: data));
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Copied to clipboard')));
     }
 
-    String type = 'text';
+    String fallbackType = 'text';
     if (data.startsWith('BEGIN:VCARD')) {
-      type = 'contact';
-    } else if (data.startsWith('https://') || data.startsWith('http://')) {
-      type = 'url';
+      fallbackType = 'contact';
+    } else if (data.startsWith('http://') || data.startsWith('https://')) {
+      fallbackType = 'url';
     }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (context, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text("Scanned Result:", style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              Text("Type: ${type.toUpperCase()}",
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary)),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SelectableText(data, style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: 24),
-                      if (type == 'url')
-                        ElevatedButton.icon(
-                          onPressed: () => _launchURL(data),
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Text("Open URL"),
-                          style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-                        ),
-                      if (type == 'contact')
-                        ElevatedButton.icon(
-                          onPressed: () => _saveContact(data),
-                          icon: const Icon(Icons.open_in_new),
-                          label: const Text("Save Contact"),
-                          style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => SharePlus.instance.share(ShareParams(text: data)),
-                      icon: const Icon(Icons.share),
-                      label: const Text("Share"),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        scannerController?.start();
-                      },
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text("Scan Again"),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+    final displayFields = <String, String>{};
+    if (fallbackType == 'contact') {
+      for (final line in data.split('\n')) {
+        if (line.startsWith('FN:')) {
+          displayFields['Name'] = line.substring(3);
+        }
+        if (line.startsWith('TEL:')) {
+          displayFields['Phone'] = line.substring(4);
+        }
+        if (line.startsWith('EMAIL:')) {
+          displayFields['Email'] = line.substring(6);
+        }
+      }
+    } else if (fallbackType == 'url') {
+      displayFields['URL'] = data;
+    } else {
+      displayFields['Text'] = data;
+    }
+
+    if (isQr) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScannedQrPreviewScreen(
+            displayTitle: displayTitle,
+            rawData: data,                    // <-- the full vCard/URL/etc.
+            displayFields: displayFields,
           ),
         ),
-      ),
-    );
+      );
+    } else {
 
-    final historyBox = Hive.box<SavedCode>('scan_history');
-    await historyBox.add(SavedCode(
-      title: 'Scanned · ${DateTime.now().toLocal().toIso8601String()}',
-      isQr: true,
-        data: data
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScannedBarcodePreviewScreen(
+            displayTitle: displayTitle,
+            data: data,
+            displayFields: displayFields,
+            barcodeSymbology: _barcodeFromFormatName(formatName),
+          ),
+        ),
+      );
+    }
+
+    // then save to Hive
+    final historyBox = Hive.box<ScannedCode>('scan_history');
+    await historyBox.add(ScannedCode(
+      title: displayTitle,
+      isQr: isQr,
+      data: data,
+      formatName: formatName,
     ));
 
     Navigator.of(context).popUntil((r) => r.isFirst);
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HistoryPage()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const HistoryPage()));
   }
 
   Future<void> _launchURL(String url) async {
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    }
+    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
   }
 
-  Future<void> _saveContact(String vcardData) async {
-    final lines = vcardData.split('\n');
+  Future<void> _saveContact(String vcard) async {
+    final lines = vcard.split('\n');
     String? name, phone, email;
-    for (var line in lines) {
-      if (line.startsWith('FN:')) name = line.substring(3);
-      if (line.startsWith('TEL:')) phone = line.substring(4);
-      if (line.startsWith('EMAIL:')) email = line.substring(5);
+    for (var l in lines) {
+      if (l.startsWith('FN:')) name = l.substring(3);
+      if (l.startsWith('TEL:')) phone = l.substring(4);
+      if (l.startsWith('EMAIL:')) email = l.substring(5);
     }
-
     final contact = contacts.Contact()
       ..name.first = name ?? ''
       ..phones = [contacts.Phone(phone ?? '')]
       ..emails = [contacts.Email(email ?? '')];
-
     try {
       await contact.insert();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Contact Saved")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Contact Saved")));
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed!")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Failed!")));
     }
   }
 
@@ -269,27 +218,24 @@ class _ScannerScreenState extends State<ScannerScreen> {
       return Scaffold(
         backgroundColor: Colors.indigo,
         appBar: AppBar(title: const Text("Scanner"), backgroundColor: Colors.indigo),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.camera_alt_outlined, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text("Camera Permission is required"),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _initScanner,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
-              child: const Text("Grant Permission"),
-            ),
-          ],
-        ),
+        body: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.camera_alt_outlined, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text("Camera Permission is required"),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _initScanner,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+            child: const Text("Grant Permission"),
+          ),
+        ]),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.indigo,
       appBar: AppBar(
-        title: const Text("Scan QR Code"),
+        title: const Text("Scan QR / Barcode"),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(
@@ -303,33 +249,62 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: scannerController!,
-            onDetect: (capture) {
-              final code = capture.barcodes.first.rawValue;
-              if (code != null) _processScanneddata(code);
-            },
-          ),
-          const Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                'Align QR Code within the frame',
-                style: TextStyle(
-                  color: Colors.white,
-                  backgroundColor: Colors.black54,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+      body: Stack(children: [
+        MobileScanner(
+          controller: scannerController!,
+          onDetect: (capture) {
+            final bc = capture.barcodes.first;
+            final code = bc.rawValue;
+            final isQr = bc.format == BarcodeFormat.qrCode;
+            if (code != null) {
+              final now = DateTime.now();
+              final date = DateFormat('dd/MM/yy').format(now);
+              final time = DateFormat('hh:mm a').format(now);
+              final title = '$date , $time';
+              _processScannedData(code, isQr, title, bc.format.name);
+            }
+          },
+        ),
+        const Positioned(
+          bottom: 24, left: 0, right: 0,
+          child: Center(
+            child: Text(
+              'Align code within the frame',
+              style: TextStyle(
+                color: Colors.white,
+                backgroundColor: Colors.black54,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ]),
     );
+  }
+}
+
+bcw.Barcode _barcodeFromFormatName(String name) {
+  switch (name) {
+    case 'code128':
+      return bcw.Barcode.code128();
+    case 'code39':
+      return bcw.Barcode.code39();
+    case 'code93':
+      return bcw.Barcode.code93();
+    case 'ean13':
+      return bcw.Barcode.ean13();
+    case 'ean8':
+      return bcw.Barcode.ean8();
+    case 'upcE':
+      return bcw.Barcode.upcE();
+    case 'dataMatrix':
+      return bcw.Barcode.dataMatrix();
+    case 'pdf417':
+      return bcw.Barcode.pdf417();
+    case 'qrCode':
+      return bcw.Barcode.qrCode();
+    default:
+      return bcw.Barcode.code128();
   }
 }

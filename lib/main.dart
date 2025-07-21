@@ -8,15 +8,19 @@ import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:qr_barcode/utils/theme/theme.dart';
 import 'package:qr_barcode/utils/theme/theme_manager.dart';
 import 'data/savedcode.dart';
+import 'data/scannedcode.dart';
 import 'screens/main_pages/my_codes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   Hive.registerAdapter(SavedCodeAdapter());
-  //await Hive.deleteBoxFromDisk('saved_codes');
+  await Hive.deleteBoxFromDisk('saved_codes');
+  await Hive.deleteBoxFromDisk('scan_history');
+  await Hive.openBox<ScannedCode>('scan_history');
   await Hive.openBox<SavedCode>('saved_codes');
-  await Hive.openBox<SavedCode>('scan_history');
+  Hive.registerAdapter(ScannedCodeAdapter());
+  await Hive.openBox<ScannedCode>('scan_history');
   await Hive.openBox('settings');
   runApp(MyApp());
 }
