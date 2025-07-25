@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:qr_barcode/utils/constants/colors.dart';
 
 import '../../data/camera_data.dart';
 
@@ -20,7 +21,11 @@ class SettingsPage extends StatelessWidget {
         final autoCopy = settingsBox.get('autoCopy', defaultValue: false) as bool;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Settings')),
+          appBar: AppBar(
+              title: const Text('Settings', style: TextStyle(color: AppColors.appColour, fontWeight: FontWeight.bold),),
+            centerTitle: true,
+
+          ),
           body: ListView(
             children: [
                ListTile(

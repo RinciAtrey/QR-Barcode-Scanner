@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/constants/colors.dart';
 import 'qr_code_type.dart';
 
 class QrGeneratorScreen extends StatefulWidget {
@@ -158,20 +159,19 @@ END:VCARD''';
     }
 
     return Scaffold(
-      backgroundColor: Colors.indigo,
+      backgroundColor: AppColors.appColour,
       appBar: AppBar(
-        backgroundColor: Colors.indigo,
+        backgroundColor: AppColors.appColour,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text("Generate QR Code"),
+        title: const Text("Generate QR Code", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold )),
+        centerTitle: true,
         actions: [
           TextButton(
             onPressed: () {
               final data = _generateQRData();
-              if (data.isEmpty) return;
-
+               if (data.isEmpty) return;
               final displayFields = _makeDisplayFields();
-
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => QRPreviewScreen(
@@ -196,65 +196,20 @@ END:VCARD''';
           children: [
             Card(
               color: Colors.white,
-              elevation: 0,
+              elevation: 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   children: [
                     formWidget,
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            if (qrData.isNotEmpty)
-              Column(
-                children: [
-                  Card(
-                    color: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Screenshot(
-                        controller: _screenshotController,
-                        child: Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                          child: QrImageView(
-                            data: qrData,
-                            version: QrVersions.auto,
-                            size: 200,
-                            errorCorrectionLevel: QrErrorCorrectLevel.H,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _shareQRCode,
-                    icon: const Icon(Icons.share),
-                    label: const Text("Share QR Code"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
       ),

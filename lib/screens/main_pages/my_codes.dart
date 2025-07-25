@@ -8,6 +8,7 @@ import '../../barcode/generate_barcode.dart';
 import '../../barcode/preview_barcode_screen.dart';
 import '../../data/generate_code.dart';
 import '../../data/savedcode.dart';
+import '../../utils/constants/colors.dart';
 
 
 Barcode _barcodeFromName(String name) {
@@ -71,10 +72,10 @@ class _MyCodesState extends State<MyCodes> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Color(0xFF3674B5),
-          title: Text('My Codes'),
+          title: Text('My Codes', style: TextStyle(color: AppColors.appColour, fontWeight: FontWeight.bold ),),
+          centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, color: AppColors.appColour,),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -86,7 +87,7 @@ class _MyCodesState extends State<MyCodes> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.delete_rounded),
+              icon: const Icon(Icons.delete_rounded, color: AppColors.appColour,),
               tooltip: 'Delete all',
               onPressed: _deleteAll,
             ),
@@ -94,16 +95,29 @@ class _MyCodesState extends State<MyCodes> {
         ),
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: TextField(
-                decoration: InputDecoration(
-                  labelText: "Search",
-                  suffixIcon: Icon(Icons.search),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 360,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        hintText: "Search",
+                        border: InputBorder.none,
+                      ),
+                      onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
+                    ),
+                  ),
                 ),
-                onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
-              ),
+                const Icon(
+                  Icons.search,
+                  //color: AppColors.appColour,
+                ),
+              ],
             ),
+
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: _box.listenable(),
@@ -118,10 +132,45 @@ class _MyCodesState extends State<MyCodes> {
                         .toList();
                   }
                   if (codes.isEmpty) {
-                    return Center(child: Text("No saved codes yet."));
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "No saved codes yet.",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const GenerateCode(),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.appColour,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text("Add New Code"),
+                          ),
+                        ],
+                      ),
+                    );
                   }
+
                   return ListView.separated(
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(5),
                     itemCount: codes.length,
                     separatorBuilder: (_, __) => Divider(thickness: 1),
                     itemBuilder: (context, index) {

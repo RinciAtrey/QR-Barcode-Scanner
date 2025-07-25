@@ -67,7 +67,7 @@ class _GenerateCodeState extends State<GenerateCode> {
 
     final _barItems = [
       _TileData(
-        icon: Icons.barcode_reader,
+        icon: Icons.qr_code_2_rounded,
         label: 'Code 128',
         action: () {
           Navigator.push(context,
@@ -136,8 +136,8 @@ class _GenerateCodeState extends State<GenerateCode> {
     final theme = Theme.of(context);
     return DraggableScrollableSheet(
       controller: _sheetCtrl,
-      initialChildSize: 0.9,
-      maxChildSize: 0.9,
+      initialChildSize: 0.95,
+      maxChildSize: 0.95,
       minChildSize: 0.3,
       snap: true,
       snapSizes: const [0.3, 0.75],

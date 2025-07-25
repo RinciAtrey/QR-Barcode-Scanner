@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:qr_barcode/screens/scannedQrPreview.dart';
+import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../data/scannedcode.dart';
 import '../scannedBarcodePreview.dart';
@@ -94,21 +95,96 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Scan History (${items.length})'),
-        actions: [ IconButton(icon: const Icon(Icons.delete_sweep), onPressed: _deleteAll) ],
+        centerTitle: true,
+        title: Text('Scan History',
+            style: TextStyle(color: AppColors.appColour, fontWeight: FontWeight.bold )),
+        actions: [ IconButton(icon: const Icon(Icons.delete, color: AppColors.appColour,),
+            onPressed: _deleteAll) ],
       ),
       body: Column(
         children: [
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          //   child: TextField(
+          //     decoration: const InputDecoration(labelText: "Search", suffixIcon: Icon(Icons.search)),
+          //     onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
+          //   ),
+          // ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 360,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                  child: TextFormField(
+                    decoration: const InputDecoration(
+                      hintText: "Search",
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.search,
+                //color: AppColors.appColour,
+              ),
+            ],
+          ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: TextField(
-              decoration: const InputDecoration(labelText: "Search", suffixIcon: Icon(Icons.search)),
-              onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${items.length}',
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: AppColors.appColour,
+                    ),
+                  ),
+                ),
+                const Divider(thickness: 1),
+              ],
             ),
           ),
+
           Expanded(
             child: items.isEmpty
-                ? const Center(child: Text("No scan history."))
+                ?  Center(
+          child: Column(
+          mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "No scanned codes yet.",
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: () {
+
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.appColour,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text("Scan Code"),
+              ),
+            ],
+          ),
+    )
                 : ListView.separated(
               padding: const EdgeInsets.all(12),
               itemCount: items.length,

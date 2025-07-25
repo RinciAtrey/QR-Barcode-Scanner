@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:qr_barcode/screens/main_pages/scanner_screen.dart';
@@ -39,6 +40,10 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'QR Barcode',
           theme: lightTheme,
+          // theme: lightTheme.copyWith(
+          //   textTheme: GoogleFonts.actorTextTheme(
+          //   Theme.of(context).textTheme,
+          // ), ),
           darkTheme: darkTheme,
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
           home: const HomeScreen(),
@@ -81,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             selectedFontSize: 14,
-            selectedItemColor: Color(0xFF4b68ff),
+            selectedItemColor: AppColors.appColour,
             unselectedItemColor: Colors.grey,
             unselectedFontSize: 12,
             iconSize: iconSize,

@@ -8,6 +8,8 @@ import 'package:qr_barcode/barcode/preview_barcode_screen.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/constants/colors.dart';
+
 class GenerateBarcode extends StatefulWidget {
   final int initialIndex;
   const GenerateBarcode({
@@ -137,18 +139,18 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.appColour,
       appBar: AppBar(
-        title: Text('Barcode Generator'),
-        elevation: 0,
-        backgroundColor: Colors.blue.shade600,
+          backgroundColor: AppColors.appColour,
         foregroundColor: Colors.white,
+        title: Text('Barcode Generator',style: TextStyle( color: Colors.white, fontWeight: FontWeight.bold )),
+        centerTitle: true,
         actions: [
           TextButton(
             onPressed: () {
               final displayFields = <String,String>{
                 'Data': _barcodeData,
               };
-
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PreviewBarcodeScreen(
@@ -167,15 +169,6 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            Colors.blue.shade50,
-            Colors.white,
-          ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          )
-        ),
         child: SingleChildScrollView(
           padding: EdgeInsets.all(16),
           child: Column(
@@ -192,7 +185,7 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color:  Colors.blue.shade800,
+                        color:  AppColors.appColour,
                       ),
                       ),
                       SizedBox(height: 16,),
@@ -200,11 +193,9 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                         controller: _textController,
                         decoration: InputDecoration(
                           labelText: "Barcode Data",
-                          hintText: 'Enter Product Data, SKU or Code',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          prefix: Icon(Icons.qr_code,),
                           suffixIcon: IconButton(onPressed: (){
                             setState(() {
                               _textController.clear();
@@ -218,7 +209,7 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color:  Colors.blue.shade800,
+                          color:  AppColors.appColour,
                         ),
                       ),
                       SizedBox(height: 8,),
@@ -251,37 +242,37 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                   ),),
               ),
               SizedBox(height:24 ,),
-              Card(
-                color: Colors.white,
-                elevation: 4,
-                child: Padding(padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("Generated Barcode",style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade800,
-                          ),),
-                          IconButton(onPressed: _copyToClipboard,
-                              icon: Icon(Icons.copy)),
-                          IconButton(onPressed: (){
-
-                          }, icon: Icon(Icons.share))
-                        ],
-                      ),
-                      SizedBox(height: 16,),
-                      _buildBarcodeWidget(),
-                      SizedBox(height: 16,),
-                      Container(
-
-                      )
-                    ],
-                  ),
-                ),
-              )
+              // Card(
+              //   color: Colors.white,
+              //   elevation: 4,
+              //   child: Padding(padding: EdgeInsets.all(16),
+              //     child: Column(
+              //       children: [
+              //         Row(
+              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //           children: [
+              //             Text("Generated Barcode",style: TextStyle(
+              //               fontSize: 18,
+              //               fontWeight: FontWeight.bold,
+              //               color: Colors.blue.shade800,
+              //             ),),
+              //             IconButton(onPressed: _copyToClipboard,
+              //                 icon: Icon(Icons.copy)),
+              //             IconButton(onPressed: (){
+              //
+              //             }, icon: Icon(Icons.share))
+              //           ],
+              //         ),
+              //         SizedBox(height: 16,),
+              //         _buildBarcodeWidget(),
+              //         SizedBox(height: 16,),
+              //         Container(
+              //
+              //         )
+              //       ],
+              //     ),
+              //   ),
+              // )
             ],
           ),
         ),
