@@ -71,6 +71,7 @@ class _MyCodesState extends State<MyCodes> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
+          backgroundColor: Color(0xFF3674B5),
           title: Text('My Codes'),
           leading: IconButton(
             icon: const Icon(Icons.add),

@@ -15,7 +15,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   Hive.registerAdapter(SavedCodeAdapter());
-  await Hive.deleteBoxFromDisk('saved_codes');
   await Hive.deleteBoxFromDisk('scan_history');
   await Hive.openBox<ScannedCode>('scan_history');
   await Hive.openBox<SavedCode>('saved_codes');

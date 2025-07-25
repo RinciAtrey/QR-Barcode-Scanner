@@ -45,7 +45,12 @@ class _HistoryPageState extends State<HistoryPage> {
     );
     if (ok == true) {
       await _box.clear();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All history deleted')));
+      setState(() {
+
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All history deleted')),
+      );
     }
   }
 
@@ -79,7 +84,6 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    //reverse to show newest first
     final allItems = _box.values.toList().reversed.toList();
     final items = _search.isEmpty
         ? allItems
@@ -145,12 +149,21 @@ class _HistoryPageState extends State<HistoryPage> {
                     title: Text(c.isQr ? 'QR code \n${c.title}' : 'Barcode \n${c.title}'),
                     subtitle: Text(firstValue, maxLines: 1, overflow: TextOverflow.ellipsis),
                     onTap: () {
+                      final typeLabel = c.title.contains('Contact')
+                          ? 'Contact'
+                          : c.title.toLowerCase().contains('wifi')
+                          ? 'Wi‑Fi'
+                          : c.data.startsWith(RegExp(r'https?://'))
+                          ? 'Website'
+                          : 'Text';
+                      final displayTitle = '$typeLabel';
+
                       if (c.isQr) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => ScannedQrPreviewScreen(
-                              displayTitle: c.title,
+                              displayTitle: displayTitle,
                               rawData: c.data,
                               displayFields: fields,
                             ),
@@ -161,14 +174,16 @@ class _HistoryPageState extends State<HistoryPage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => ScannedBarcodePreviewScreen(
-                              displayTitle: c.title,
+                              displayTitle: displayTitle,
                               data: c.data,
                               displayFields: fields,
-                                barcodeSymbology: _barcodeFromFormatName(c.formatName)
+                              barcodeSymbology: _barcodeFromFormatName(c.formatName),
                             ),
                           ),
                         );
                       }
+
+
                     },
                   ),
                 );

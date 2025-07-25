@@ -5,13 +5,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 class ScannedQrPreviewScreen extends StatelessWidget {
   final String displayTitle;
-  final String rawData;                     // <-- re‑added
+  final String rawData;
   final Map<String, String> displayFields;
 
   const ScannedQrPreviewScreen({
     Key? key,
     required this.displayTitle,
-    required this.rawData,                  // <-- re‑added
+    required this.rawData,
     required this.displayFields,
   }) : super(key: key);
 
@@ -26,14 +26,13 @@ class ScannedQrPreviewScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Center(
             child: QrImageView(
-              data: rawData,                    // <-- use rawData here
+              data: rawData,
               version: QrVersions.auto,
               size: 250,
               backgroundColor: Colors.white,
             ),
           ),
           const SizedBox(height: 24),
-          // Show each parsed field, e.g. SSID, Password or Name, Phone, Email
           ...displayFields.entries.map((e) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
             child: Text(
