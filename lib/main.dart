@@ -39,14 +39,17 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'QR Barcode',
-          theme: lightTheme,
-          // theme: lightTheme.copyWith(
-          //   textTheme: GoogleFonts.actorTextTheme(
-          //   Theme.of(context).textTheme,
-          // ), ),
-          darkTheme: darkTheme,
+          theme: lightTheme.copyWith(
+            textTheme: GoogleFonts.albertSansTextTheme(    //alexandriaTextTheme, albertSansTextTheme
+            Theme.of(context).textTheme,
+          ), ),
+          darkTheme: darkTheme.copyWith(
+            textTheme: GoogleFonts.albertSansTextTheme(
+              Theme.of(context).textTheme,
+            )
+          ),
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-          home: const HomeScreen(),
+          home: HomeScreen(key: HomeScreen.globalKey),
         );
       },
     );
@@ -56,6 +59,7 @@ class MyApp extends StatelessWidget {
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  static final GlobalKey<_HomeScreenState> globalKey = GlobalKey<_HomeScreenState>();
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -64,6 +68,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   int _currentIndex = 0;
+
+  void switchTo(int idx) => setState(() => _currentIndex = idx);
 
   final List<Widget> _screens = [
     const ScannerScreen(),

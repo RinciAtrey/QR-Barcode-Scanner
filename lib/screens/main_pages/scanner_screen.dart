@@ -78,8 +78,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
       box.get('autoFlash', defaultValue: false) as bool;
       if (autoFlash) {
         isFlashOn = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) scannerController?.toggleTorch();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await Future.delayed(Duration(milliseconds: 100));
+          if (!mounted) return;
+          await scannerController?.toggleTorch();
         });
       }
       setState(() {
@@ -186,7 +188,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.camera_alt_outlined, color: Colors.white),
+                  icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
                   onPressed: () {
                     final box = Hive.box('settings');
                     final newFacing = currentFacing == CameraFacingOption.back

@@ -10,7 +10,6 @@ import '../../data/generate_code.dart';
 import '../../data/savedcode.dart';
 import '../../utils/constants/colors.dart';
 
-
 Barcode _barcodeFromName(String name) {
   switch (name) {
     case 'Code 128':
@@ -47,8 +46,6 @@ class _MyCodesState extends State<MyCodes> {
   final _box = Hive.box<SavedCode>('saved_codes');
   String _search = '';
 
-
-
   void _deleteAll() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -69,13 +66,17 @@ class _MyCodesState extends State<MyCodes> {
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context).size;
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('My Codes', style: TextStyle(color: AppColors.appColour, fontWeight: FontWeight.bold ),),
+          title: Text(
+            'My Codes',
+            style: TextStyle(color: AppColors.appColour, fontWeight: FontWeight.bold),
+          ),
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.add, color: AppColors.appColour,),
+            icon: const Icon(Icons.add, color: AppColors.appColour),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -87,7 +88,7 @@ class _MyCodesState extends State<MyCodes> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.delete_rounded, color: AppColors.appColour,),
+              icon: const Icon(Icons.delete_rounded, color: AppColors.appColour),
               tooltip: 'Delete all',
               onPressed: _deleteAll,
             ),
@@ -95,29 +96,32 @@ class _MyCodesState extends State<MyCodes> {
         ),
         body: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 360,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: mq.width * 0.04,
+                vertical: mq.height * 0.01,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
                     child: TextFormField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: "Search",
                         border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: mq.width * 0.04,
+                          vertical: mq.height * 0.015,
+                        ),
+                        fillColor: Colors.grey.shade200,
+                        filled: true,
+                        suffixIcon: Icon(Icons.search, color: AppColors.appColour),
                       ),
                       onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
                     ),
                   ),
-                ),
-                const Icon(
-                  Icons.search,
-                  //color: AppColors.appColour,
-                ),
-              ],
+                ],
+              ),
             ),
-
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: _box.listenable(),
@@ -125,140 +129,123 @@ class _MyCodesState extends State<MyCodes> {
                   // get and sort
                   var codes = box.values.toList()
                     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                  // filter by search
+
                   if (_search.isNotEmpty) {
-                    codes = codes
-                        .where((c) => c.title.toLowerCase().contains(_search))
-                        .toList();
-                  }
-                  if (codes.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "No saved codes yet.",
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => const GenerateCode(),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.appColour,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            icon: const Icon(Icons.add_circle_outline),
-                            label: const Text("Add New Code"),
-                          ),
-                        ],
-                      ),
-                    );
+                    final searchLower = _search;
+                    codes = codes.where((c) {
+                      final displayTitle = (c.isQr ? 'QR code · ' : 'Barcode · ') + c.title;
+                      final titleLower   = displayTitle.toLowerCase();
+                      final dataLower    = c.data.toLowerCase();
+
+                      final firstValueLower = c.isQr
+                          ? (_fieldsFromSaved(c).values.first.toLowerCase())
+                          : '';
+                      return titleLower.contains(searchLower)
+                          || dataLower.contains(searchLower)
+                          || firstValueLower.contains(searchLower);
+                    }).toList();
                   }
 
-                  return ListView.separated(
-                    padding: EdgeInsets.all(5),
-                    itemCount: codes.length,
-                    separatorBuilder: (_, __) => Divider(thickness: 1),
-                    itemBuilder: (context, index) {
-                      final c = codes[index];
-                      return Dismissible(
-                        key: ValueKey(c.key),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.redAccent,
-                          alignment: Alignment.centerRight,
-                          padding: EdgeInsets.symmetric(horizontal: 20),
-                          child: Icon(Icons.delete, color: Colors.white),
-                        ),
-                        onDismissed: (_) {
-                          box.delete(c.key);
-                        },
-                        child: ListTile(
-                          leading: Container(
-                            width: 50,
-                            height: 50,
-                            color: Colors.white,
-                            alignment: Alignment.center,
-                            child: c.isQr
-                                ? QrImageView(
-                              data: c.data,
-                              version: QrVersions.auto,
-                              size: 50,
-                              backgroundColor: Colors.white,
-                            )
-                                : BarcodeWidget(
-                              data: c.data,
-                              barcode: _barcodeFromName(c.title),
-                              width: 110,
-                              height: 80,
-                              drawText: false,
-                              color: Colors.black,
-                              backgroundColor: Colors.white,
-                            ),
+                  if (codes.isEmpty) {
+                    return Center(child: Text("No saved codes yet."));
+                  }
+                  return
+                    Expanded(
+                    child: ListView.separated(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: mq.width * 0.02,
+                        vertical: mq.height * 0.01,
+                      ),
+                      itemCount: codes.length,
+                      separatorBuilder: (_, __) => Divider(thickness: 1),
+                      itemBuilder: (context, index) {
+                        final c = codes[index];
+                        return Dismissible(
+                          key: ValueKey(c.key),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: Colors.redAccent,
+                            alignment: Alignment.centerRight,
+                            padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
+                            child: Icon(Icons.delete, color: Colors.white),
                           ),
-                          title: Text(
-                            c.isQr
-                                ? 'QR code · ${c.title}'
-                                : 'Barcode · ${c.title}',
-                          ),
-                          subtitle: Builder(builder: (_) {
-                            final fields = _fieldsFromSaved(c);
-                            final firstValue = fields.values.isNotEmpty
-                                ? fields.values.first
-                                : '';
-                            return Text(
-                              firstValue,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            );
-                          }),
-                          onTap: () {
-                            final fields = c.isQr
-                                ? _fieldsFromQr(c)
-                                : <String,String>{ 'Data': c.data };
-                            if (c.isQr) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => QRPreviewScreen(
-                                    title: '${c.title}',
-                                      data: c.data,
-                                      displayFields: fields
-                                  ),
-                                ),
-                              );
-                            } else {
-                              final fields = <String,String>{ 'Data': c.data };
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => PreviewBarcodeScreen(
-                                    type: BarcodeOption(
-                                        c.title, _barcodeFromName(c.title)),
-                                      data: c.data,
-                                      displayFields: fields
-                                  ),
-                                ),
-                              );
-                            }
+                          onDismissed: (_) {
+                            box.delete(c.key);
                           },
-                        ),
-                      );
-                    },
+                          child: ListTile(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: mq.width * 0.03,
+                              vertical: mq.height * 0.01,
+                            ),
+                            leading: Container(
+                              width: mq.width * 0.15,
+                              height: mq.width * 0.15,
+                              color: Colors.white,
+                              alignment: Alignment.center,
+                              child: c.isQr
+                                  ? QrImageView(
+                                data: c.data,
+                                version: QrVersions.auto,
+                                size: mq.width * 0.15,
+                                backgroundColor: Colors.white,
+                              )
+                                  : BarcodeWidget(
+                                data: c.data,
+                                barcode: _barcodeFromName(c.title),
+                                width: mq.width * 0.3,
+                                height: mq.height * 0.1,
+                                drawText: false,
+                                color: Colors.black,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                            title: Text(
+                              c.isQr ? 'QR code · ${c.title}' : 'Barcode · ${c.title}',
+                              style: TextStyle(fontSize: mq.width * 0.045),
+                            ),
+                            subtitle: Builder(builder: (_) {
+                              final fields = _fieldsFromSaved(c);
+                              final firstValue = fields.values.isNotEmpty ? fields.values.first : '';
+                              return Text(
+                                firstValue,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: mq.width * 0.035),
+                              );
+                            }),
+                            onTap: () {
+                              final fields = c.isQr
+                                  ? _fieldsFromQr(c)
+                                  : <String, String>{'Data': c.data};
+                              if (c.isQr) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => QRPreviewScreen(
+                                      title: '${c.title}',
+                                      data: c.data,
+                                      displayFields: fields,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PreviewBarcodeScreen(
+                                      type: BarcodeOption(
+                                          c.title, _barcodeFromName(c.title)),
+                                      data: c.data,
+                                      displayFields: fields,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               ),
@@ -270,22 +257,22 @@ class _MyCodesState extends State<MyCodes> {
   }
 }
 
-Map<String,String> _fieldsFromQr(SavedCode c) {
-  final m = <String,String>{};
+Map<String, String> _fieldsFromQr(SavedCode c) {
+  final m = <String, String>{};
 
   // 1) Contact
   if (c.title.contains('Contact')) {
     for (final line in c.data.split('\n')) {
-      if (line.startsWith('FN:'))    m['Name']  = line.substring(3);
-      if (line.startsWith('TEL:'))   m['Phone'] = line.substring(4);
+      if (line.startsWith('FN:')) m['Name'] = line.substring(3);
+      if (line.startsWith('TEL:')) m['Phone'] = line.substring(4);
       if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
     }
 
-    // 2) Wi‑Fi
+    // 2) Wi-Fi
   } else if (c.title.toLowerCase().contains('wifi')) {
     final ssidMatch = RegExp(r'S:([^;]+);').firstMatch(c.data);
     final passMatch = RegExp(r'P:([^;]+);').firstMatch(c.data);
-    if (ssidMatch != null) m['SSID']     = ssidMatch.group(1)!;
+    if (ssidMatch != null) m['SSID'] = ssidMatch.group(1)!;
     if (passMatch != null) m['Password'] = passMatch.group(1)!;
 
     // 3) Telephone
@@ -304,34 +291,29 @@ Map<String,String> _fieldsFromQr(SavedCode c) {
   return m;
 }
 
-
-Map<String,String> _fieldsFromSaved(SavedCode c) {
+Map<String, String> _fieldsFromSaved(SavedCode c) {
   if (!c.isQr) {
-    return { 'Data': c.data };
+    return {'Data': c.data};
   }
 
   // QR codes:
-  final m = <String,String>{};
+  final m = <String, String>{};
   if (c.title.contains('Contact')) {
     for (final line in c.data.split('\n')) {
-      if (line.startsWith('FN:'))    m['Name']  = line.substring(3);
-      if (line.startsWith('TEL:'))   m['Phone'] = line.substring(4);
+      if (line.startsWith('FN:')) m['Name'] = line.substring(3);
+      if (line.startsWith('TEL:')) m['Phone'] = line.substring(4);
       if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
     }
   } else if (c.title.contains('Wifi')) {
     final ssidMatch = RegExp(r'S:([^;]+);').firstMatch(c.data);
     final passMatch = RegExp(r'P:([^;]+);').firstMatch(c.data);
-    if (ssidMatch  != null) m['SSID']     = ssidMatch .group(1)!;
-    if (passMatch  != null) m['Password'] = passMatch .group(1)!;
+    if (ssidMatch != null) m['SSID'] = ssidMatch.group(1)!;
+    if (passMatch != null) m['Password'] = passMatch.group(1)!;
   } else if (c.title.contains('Call')) {
     m['Number'] = c.data.replaceFirst('TEL:', '');
   } else {
-    //show everything
+    // show everything
     m['Data'] = c.data;
   }
   return m;
 }
-
-
-
-

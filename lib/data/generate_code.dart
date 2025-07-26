@@ -138,9 +138,9 @@ class _GenerateCodeState extends State<GenerateCode> {
       controller: _sheetCtrl,
       initialChildSize: 0.95,
       maxChildSize: 0.95,
-      minChildSize: 0.3,
-      snap: true,
-      snapSizes: const [0.3, 0.75],
+      minChildSize: 0.95,
+      // snap: true,
+      // snapSizes: const [0.3, 0.75],
       builder: (context, scrollCtrl) {
         return Container(
           decoration: const BoxDecoration(
