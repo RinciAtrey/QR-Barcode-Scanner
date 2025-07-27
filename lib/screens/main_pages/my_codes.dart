@@ -8,6 +8,7 @@ import '../../barcode/generate_barcode.dart';
 import '../../barcode/preview_barcode_screen.dart';
 import '../../data/generate_code.dart';
 import '../../data/savedcode.dart';
+import '../../main.dart';
 import '../../utils/constants/colors.dart';
 
 Barcode _barcodeFromName(String name) {
@@ -45,6 +46,7 @@ class MyCodes extends StatefulWidget {
 class _MyCodesState extends State<MyCodes> {
   final _box = Hive.box<SavedCode>('saved_codes');
   String _search = '';
+  final TextEditingController _searchController = TextEditingController();
 
   void _deleteAll() async {
     final ok = await showDialog<bool>(
@@ -62,6 +64,22 @@ class _MyCodesState extends State<MyCodes> {
       await _box.clear();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All codes deleted')));
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _search = _searchController.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -105,6 +123,7 @@ class _MyCodesState extends State<MyCodes> {
                 children: [
                   Expanded(
                     child: TextFormField(
+                      controller: _searchController,
                       decoration: InputDecoration(
                         hintText: "Search",
                         border: InputBorder.none,
@@ -114,13 +133,60 @@ class _MyCodesState extends State<MyCodes> {
                         ),
                         fillColor: Colors.grey.shade200,
                         filled: true,
-                        suffixIcon: Icon(Icons.search, color: AppColors.appColour),
+                        prefixIcon: Icon(Icons.search, color: AppColors.appColour),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.clear, size: 20,),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        ),
                       ),
                       onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
                     ),
                   ),
                 ],
               ),
+            ),
+            ValueListenableBuilder<Box<SavedCode>>(
+              valueListenable: _box.listenable(),
+              builder: (_, box, __) {
+                var codes = box.values.toList()
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                if (_search.isNotEmpty) {
+                  final s = _search;
+                  codes = codes.where((c) {
+                    final title = ((c.isQr ? 'QR code · ' : 'Barcode · ') + c.title).toLowerCase();
+                    final data  = c.data.toLowerCase();
+                    final extra = c.isQr
+                        ? _fieldsFromSaved(c).values.first.toLowerCase()
+                        : '';
+                    return title.contains(s) || data.contains(s) || extra.contains(s);
+                  }).toList();
+                }
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: mq.width * 0.04,
+                    vertical: mq.height * 0.005,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${codes.length}',
+                          style: TextStyle(
+                            fontSize: mq.width * 0.06,
+                            color: AppColors.appColour,
+                          ),
+                        ),
+                      ),
+                      const Divider(thickness: 1),
+                    ],
+                  ),
+                );
+              },
             ),
             Expanded(
               child: ValueListenableBuilder(
@@ -147,7 +213,44 @@ class _MyCodesState extends State<MyCodes> {
                   }
 
                   if (codes.isEmpty) {
-                    return Center(child: Text("No saved codes yet."));
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "No saved codes yet.",
+                            style: TextStyle(fontSize: mq.width * 0.045),
+                          ),
+                          SizedBox(height: mq.height * 0.02),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const GenerateCode(),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.appColour,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: mq.width * 0.06,
+                                vertical: mq.height * 0.015,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            icon: Icon(Icons.add_circle_outline, size: mq.width * 0.06),
+                            label: Text(
+                              "Create code",
+                              style: TextStyle(fontSize: mq.width * 0.045),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
                   return
                     Expanded(

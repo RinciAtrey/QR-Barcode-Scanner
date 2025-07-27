@@ -74,8 +74,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             ? CameraFacing.back
             : CameraFacing.front,
       );
-      final autoFlash =
-      box.get('autoFlash', defaultValue: false) as bool;
+      final autoFlash = box.get('autoFlash', defaultValue: false) as bool;
       if (autoFlash) {
         isFlashOn = true;
         WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -88,7 +87,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
         hasPermission = true;
         _initDone = true;
       });
-
     } else if (status.isDenied && !requested) {
       _dialogShowing = true;
       await showDialog(
@@ -123,7 +121,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ],
         ),
       );
-
     } else {
       setState(() {
         hasPermission = false;
@@ -134,12 +131,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context).size;
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: _initDone
           ? (hasPermission && scannerController != null
-          ? _buildScannerView(context)
+          ? _buildScannerView(context, mq)
           : SafeArea(
         child: Center(
           child: ElevatedButton(
@@ -147,8 +145,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: mq.width * 0.08,
+                vertical: mq.height * 0.018,
+              ),
             ),
-            child: const Text('Open Settings'),
+            child: Text(
+              'Open Settings',
+              style: TextStyle(fontSize: mq.width * 0.045),
+            ),
           ),
         ),
       ))
@@ -156,9 +161,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  Widget _buildScannerView(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final frameSize = size.width * 0.5;
+  Widget _buildScannerView(BuildContext context, Size mq) {
+    final frameSize = mq.width * 0.5;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -172,44 +176,53 @@ class _ScannerScreenState extends State<ScannerScreen> {
             child: ScanFrameOverlay(size: frameSize),
           ),
         ),
-
         // Bottom bar
-        Positioned(
-          bottom: size.height * 0.04,
-          left: size.width * 0.25,
-          right: size.width * 0.25,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
-                  onPressed: () {
-                    final box = Hive.box('settings');
-                    final newFacing = currentFacing == CameraFacingOption.back
-                        ? CameraFacingOption.front
-                        : CameraFacingOption.back;
-                    box.put('cameraFacing', newFacing.key);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(
-                    isFlashOn ? Icons.flash_on : Icons.flash_off,
-                    color: Colors.white,
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: mq.height * 0.04),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                vertical: mq.height * 0.015,
+                horizontal: mq.width * 0.05,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(mq.width * 0.03),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,        //only as wide as its children
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.flip_camera_ios_rounded,
+                      color: Colors.white,
+                      size: mq.width * 0.07,
+                    ),
+                    onPressed: () {
+                      final box = Hive.box('settings');
+                      final newFacing = currentFacing == CameraFacingOption.back
+                          ? CameraFacingOption.front
+                          : CameraFacingOption.back;
+                      box.put('cameraFacing', newFacing.key);
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      isFlashOn = !isFlashOn;
-                      scannerController!.toggleTorch();
-                    });
-                  },
-                ),
-              ],
+                  SizedBox(width: mq.width * 0.07),     //gap between icons
+                  IconButton(
+                    icon: Icon(
+                      isFlashOn ? Icons.flash_on : Icons.flash_off,
+                      color: Colors.white,
+                      size: mq.width * 0.07,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        isFlashOn = !isFlashOn;
+                        scannerController!.toggleTorch();
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
