@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/services.dart';
+import 'package:barcode/barcode.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_barcode/barcode/preview_barcode_screen.dart';
 import 'package:screenshot/screenshot.dart';
@@ -25,15 +26,21 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
   final TextEditingController _textController =TextEditingController();
   final ScreenshotController _screenshotController= ScreenshotController();
   late int _selectedBarcodeIndex;
+  String? _errorText;
 
   @override
   void initState() {
     super.initState();
     _selectedBarcodeIndex = widget.initialIndex;
-    _barcodeData = _textController.text.isEmpty
-        ? "123456789"
-        : _textController.text;
+    _barcodeData = _textController.text;
   }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
 
   Future<void> _shareQRCode() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -51,7 +58,9 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
     );
   }
 
-  String _barcodeData= '1234567890';
+
+
+  String _barcodeData = '';
   final List<BarcodeOption> _barcodeTypes= [
     BarcodeOption('Code 128', Barcode.code128()),
     BarcodeOption('Code 39', Barcode.code39()),
@@ -64,15 +73,11 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
   ];
 
 
-  Barcode get _selectedBarcodeType=>
-      _barcodeTypes[_selectedBarcodeIndex].barcode;
-
   void _generateBarCode(){
     setState(() {
-      _barcodeData= _textController.text.isEmpty
-          ? "123456789"
-          : _textController.text;
+      _barcodeData = _textController.text;
     });
+
   }
 
   void _copyToClipboard(){
@@ -82,62 +87,9 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
     ).showSnackBar(SnackBar(content: Text("Barcode Copied")));
   }
 
-  Widget _buildBarcodeWidget(){
-    try{
-      return Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color:  Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey,
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: Offset(0,3),
-            ),
-          ],
-        ),
-        child: BarcodeWidget(
-          data: _barcodeData,
-          barcode: _selectedBarcodeType,
-        width: 300,
-         height: 170,
-        style: TextStyle(fontSize: 12),
-        errorBuilder:(context,error){
-            return Container(
-              padding: EdgeInsets.all(16),
-
-              child: Column(
-                children: [
-                  Icon(Icons.error,
-                    color: Colors.redAccent,
-                    size: 48,),
-                  SizedBox(height: 8,),
-                  Text("Invalid data for selected Barcode Type",style: TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.bold,
-
-                  ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(error.toString(),
-                    style: TextStyle(color: Colors.redAccent.shade700, fontSize: 12),
-                    textAlign: TextAlign.center,)
-                  ,
-                ],
-              ),
-            );
-        } ,),
-      );
-    } catch(e){
-      return Container();
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
+    final List<int> _allowedBarcodeIndices = [0, 6, 7];
     return Scaffold(
       backgroundColor: AppColors.appColour,
       appBar: AppBar(
@@ -148,9 +100,8 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
         actions: [
           TextButton(
             onPressed: () {
-              final displayFields = <String,String>{
-                'Data': _barcodeData,
-              };
+              _generateBarCode();
+              final displayFields = <String,String>{ 'Data': _barcodeData };
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => PreviewBarcodeScreen(
@@ -161,8 +112,7 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                 ),
               );
             },
-            child: const Text('Create',
-                style: TextStyle(color: Colors.white)),
+            child: const Text('Create', style: TextStyle(color: Colors.white),),
           ),
         ],
       ),
@@ -192,17 +142,22 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                       TextField(
                         controller: _textController,
                         decoration: InputDecoration(
+                          hintText: "eg. 123456789",
                           labelText: "Barcode Data",
+                            errorText: _errorText,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           suffixIcon: IconButton(onPressed: (){
                             setState(() {
                               _textController.clear();
+                              _barcodeData = '';
                             });
                           }, icon: Icon(Icons.clear))
                         ),
-                        onChanged: (value)=> _generateBarCode(),
+                        onChanged: (value) {
+                          _generateBarCode();
+                        },
                       ),
                       SizedBox(height: 16,),
                       Text("Barcode Type",
@@ -224,11 +179,11 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                               isExpanded: true,
                                 value: _selectedBarcodeIndex,
                                 icon: Icon(Icons.arrow_drop_down),
-                                items: _barcodeTypes.asMap().entries.map((entry){
+                                items: _allowedBarcodeIndices.map((i) {
                                   return DropdownMenuItem<int>(
-                                    value: entry.key,
-                                      child: Text(entry.value.name,
-                                  ));
+                                    value: i,
+                                    child: Text(_barcodeTypes[i].name),
+                                  );
                                 }).toList(),
                                 onChanged: (int? newValue){
                                 if(newValue!= null){
@@ -241,38 +196,6 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
                     ],
                   ),),
               ),
-              SizedBox(height:24 ,),
-              // Card(
-              //   color: Colors.white,
-              //   elevation: 4,
-              //   child: Padding(padding: EdgeInsets.all(16),
-              //     child: Column(
-              //       children: [
-              //         Row(
-              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //           children: [
-              //             Text("Generated Barcode",style: TextStyle(
-              //               fontSize: 18,
-              //               fontWeight: FontWeight.bold,
-              //               color: Colors.blue.shade800,
-              //             ),),
-              //             IconButton(onPressed: _copyToClipboard,
-              //                 icon: Icon(Icons.copy)),
-              //             IconButton(onPressed: (){
-              //
-              //             }, icon: Icon(Icons.share))
-              //           ],
-              //         ),
-              //         SizedBox(height: 16,),
-              //         _buildBarcodeWidget(),
-              //         SizedBox(height: 16,),
-              //         Container(
-              //
-              //         )
-              //       ],
-              //     ),
-              //   ),
-              // )
             ],
           ),
         ),

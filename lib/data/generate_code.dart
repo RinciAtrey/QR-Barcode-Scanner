@@ -73,47 +73,47 @@ class _GenerateCodeState extends State<GenerateCode> {
           Navigator.push(context,
               MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 0,)));
         },
-      ),
-      _TileData(
-        icon: Icons.lock,
-        label: 'Code 39',
-        action: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 1,)));
-        },
-      ),
-      _TileData(
-        icon: Icons.lock,
-        label: 'Code 93',
-        action: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 2,)));
-        },
-      ),
-      _TileData(
-        icon: Icons.lock,
-        label: 'EAN-13',
-        action: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 3,)));
-        },
-      ),
-      _TileData(
-        icon: Icons.lock,
-        label: 'EAN-8',
-        action: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 4,)));
-        },
-      ),
-      _TileData(
-        icon: Icons.lock,
-        label: 'UPC-E',
-        action: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 5,)));
-        },
-      ),
+       ),
+      // _TileData(
+      //   icon: Icons.lock,
+      //   label: 'Code 39',
+      //   action: () {
+      //     Navigator.push(context,
+      //         MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 1,)));
+      //   },
+      // ),
+      // _TileData(
+      //   icon: Icons.lock,
+      //   label: 'Code 93',
+      //   action: () {
+      //     Navigator.push(context,
+      //         MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 2,)));
+      //   },
+      // ),
+      // _TileData(
+      //   icon: Icons.lock,
+      //   label: 'EAN-13',
+      //   action: () {
+      //     Navigator.push(context,
+      //         MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 3,)));
+      //   },
+      // ),
+      // _TileData(
+      //   icon: Icons.lock,
+      //   label: 'EAN-8',
+      //   action: () {
+      //     Navigator.push(context,
+      //         MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 4,)));
+      //   },
+      // ),
+      // _TileData(
+      //   icon: Icons.lock,
+      //   label: 'UPC-E',
+      //   action: () {
+      //     Navigator.push(context,
+      //         MaterialPageRoute(builder: (_) => const GenerateBarcode(initialIndex: 5,)));
+      //   },
+      // )
       _TileData(
         icon: Icons.lock,
         label: 'Data Matrix',
