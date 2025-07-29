@@ -38,7 +38,7 @@ class SettingsPage extends StatelessWidget {
                 final choice = CameraFacingOptionX.fromKey(k);
                 return Text(
                   choice == CameraFacingOption.back ? 'Back Camera' : 'Front Camera',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: TextStyle(fontSize: 10),
                 );
               },
             ),

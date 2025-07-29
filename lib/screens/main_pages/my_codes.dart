@@ -52,7 +52,7 @@ class _MyCodesState extends State<MyCodes> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete all codes?'),
+        title: const Text('Delete all codes?', style: TextStyle(color: Colors.white),),
         content: const Text('This will remove every saved code.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),

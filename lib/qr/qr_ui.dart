@@ -11,6 +11,7 @@ class TextForm extends StatelessWidget {
   Widget build(BuildContext ctx) {
     return TextField(
       controller: textController,
+     // style: TextStyle(color: Colors.black),
       decoration: const InputDecoration(
         labelText: 'TEXT',
         border: OutlineInputBorder(),

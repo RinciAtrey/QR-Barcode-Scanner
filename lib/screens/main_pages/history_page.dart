@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-import 'package:qr_barcode/screens/scannedQrPreview.dart';
 import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../data/scannedcode.dart';
 import '../../main.dart';
 import '../scannedBarcodePreview.dart';
+import '../scannedQrPreview.dart';
 
 Barcode _barcodeFromFormatName(String name) {
   switch (name) {
@@ -82,33 +82,24 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
 
-  Map<String, String> _fieldsFromQr(ScannedCode c) {
-    final m = <String, String>{};
-    if (c.title.contains('Contact')) {
-      for (final line in c.data.split('\n')) {
-        if (line.startsWith('FN:')) m['Name'] = line.substring(3);
-        if (line.startsWith('TEL:')) m['Phone'] = line.substring(4);
-        if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
-      }
-    } else if (c.title.toLowerCase().contains('wifi')) {
-      final ssid = RegExp(r'S:([^;]+);').firstMatch(c.data)?.group(1);
-      final pass = RegExp(r'P:([^;]+);').firstMatch(c.data)?.group(1);
-      if (ssid != null) m['SSID'] = ssid;
-      if (pass != null) m['Password'] = pass;
-    } else if (c.title.toLowerCase().contains('call')) {
-      m['Number'] = c.data.replaceFirst('TEL:', '');
-    } else if (c.title.toLowerCase().contains('website')) {
-      m['URL'] = c.data;
-    } else {
-      m['Text'] = c.data;
-    }
-    return m;
-  }
 
   Map<String, String> _fieldsFromSaved(ScannedCode c) {
-    if (!c.isQr) return {'Data': c.data};
-    return _fieldsFromQr(c);
+    final code = c.data;
+    if (code.startsWith('BEGIN:VCARD')) {
+      final m = <String, String>{};
+      for (final line in code.split('\n')) {
+        if (line.startsWith('FN:'))    m['Name']  = line.substring(3);
+        if (line.startsWith('TEL:'))   m['Phone'] = line.substring(4);
+        if (line.startsWith('EMAIL:')) m['Email'] = line.substring(6);
+      }
+      return m;
+    }
+    if (code.startsWith('http://') || code.startsWith('https://')) {
+      return {'URL': code};
+    }
+    return {'Text': code};
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -301,40 +292,29 @@ class _HistoryPageState extends State<HistoryPage> {
                       style: TextStyle(fontSize: mq.width * 0.035),
                     ),
                     onTap: () {
-                      final typeLabel = c.title.contains('Contact')
-                          ? 'Contact'
-                          : c.title.toLowerCase().contains('wifi')
-                          ? 'Wi‑Fi'
-                          : c.data.startsWith(RegExp(r'https?://'))
-                          ? 'Website'
-                          : 'Text';
-                      final displayTitle = '$typeLabel';
+                      final code = c.data;
+                      final fallbackType = code.startsWith('BEGIN:VCARD') ? 'Contact'
+                          : code.startsWith(RegExp(r'https?://')) ? 'Website'
+                          :                                         'Text';
+                      final fields = _fieldsFromSaved(c);
 
-                      if (c.isQr) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ScannedQrPreviewScreen(
-                              displayTitle: displayTitle,
-                              rawData: c.data,
-                              displayFields: fields,
-                            ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => c.isQr
+                              ? ScannedQrPreviewScreen(
+                            displayTitle:   fallbackType,
+                            rawData:        code,
+                            displayFields: fields,
+                          )
+                              : ScannedBarcodePreviewScreen(
+                            displayTitle:     fallbackType,
+                            data:             code,
+                            displayFields:    fields,
+                            barcodeSymbology: _barcodeFromFormatName(c.formatName),
                           ),
-                        );
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ScannedBarcodePreviewScreen(
-                              displayTitle: displayTitle,
-                              data: c.data,
-                              displayFields: fields,
-                              barcodeSymbology:
-                              _barcodeFromFormatName(c.formatName),
-                            ),
-                          ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   ),
                 );

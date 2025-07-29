@@ -14,6 +14,7 @@ import '../../utils/scan_frame.dart';
 import '../scannedBarcodePreview.dart';
 import '../scannedQrPreview.dart';
 
+
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({Key? key}) : super(key: key);
   @override
