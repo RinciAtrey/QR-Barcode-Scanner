@@ -8,6 +8,8 @@ import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/constants/snackbar.dart';
+
 class ScannedBarcodePreviewScreen extends StatelessWidget {
   final _screenshotController = ScreenshotController();
   final String displayTitle;
@@ -124,7 +126,7 @@ class ScannedBarcodePreviewScreen extends StatelessWidget {
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: raw));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Copied to clipboard')),
+                                AppSnackBar.success('Copied to the clipboard'),
                               );
                             },
                           ),

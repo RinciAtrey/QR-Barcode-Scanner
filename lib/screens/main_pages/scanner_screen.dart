@@ -8,8 +8,11 @@ import 'package:barcode_widget/barcode_widget.dart' as bcw;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 import '../../data/camera_data.dart';
 import '../../data/scannedcode.dart';
+import '../../utils/constants/colors.dart';
+import '../../utils/constants/snackbar.dart';
 import '../../utils/scan_frame.dart';
 import '../scannedBarcodePreview.dart';
 import '../scannedQrPreview.dart';
@@ -129,6 +132,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
       });
     }
   }
+  String _extractWiFiValue(String payload, String key) {
+    final regex = RegExp(r'$key:([^;]+);'.replaceFirst('\$key', key));
+    final match = regex.firstMatch(payload);
+    return match?.group(1) ?? '';
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +240,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
     );
   }
 
-  void _onDetect(BarcodeCapture capture) {
+  Future<void> _onDetect(BarcodeCapture capture) async {
     if (_isProcessing) return;
     _isProcessing = true;
     final bc = capture.barcodes.first;
@@ -245,9 +254,168 @@ class _ScannerScreenState extends State<ScannerScreen> {
     if (autoCopy) {
       Clipboard.setData(ClipboardData(text: code));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Copied to clipboard')),
+        AppSnackBar.success('Copied to the clipboard'),
       );
     }
+    if (code.startsWith(RegExp(r'https?://'))) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          backgroundColor: Colors.black87,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 8,
+          title: Row(
+            children: const [
+              Icon(Icons.link, color: AppColors.appColour),
+              SizedBox(width: 8),
+              Text(
+                'Open Link',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "URL: $code",
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+                _launchURL(code);
+                scannerController?.start();
+                _isProcessing = false;
+              },
+              child: const Text('Launch'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: AppColors.appColour,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 4,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                scannerController?.start();
+                _isProcessing = false;
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+
+    if (code.startsWith('WIFI:')) {
+      final ssid = _extractWiFiValue(code, 'S');
+      final pwd  = _extractWiFiValue(code, 'P');
+      final auth = _extractWiFiValue(code, 'T');
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: Colors.black87,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 8,
+          title: Row(
+            children: const [
+              Icon(Icons.wifi, color: AppColors.appColour),
+              SizedBox(width: 8),
+              Text(
+                'Connect to Wi‑Fi',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'SSID: $ssid\nPassword: $pwd\nSecurity: $auth',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+                NetworkSecurity securityEnum;
+                switch (auth.toUpperCase()) {
+                  case 'WEP':
+                    securityEnum = NetworkSecurity.WEP;
+                    break;
+                  case 'WPA':
+                    securityEnum = NetworkSecurity.WPA;
+                    break;
+                  default:
+                    securityEnum = NetworkSecurity.NONE;
+                }
+                WiFiForIoTPlugin.connect(
+                  ssid,
+                  password: pwd,
+                  security: securityEnum,
+                ).then((connected) {
+                  if (connected == true) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      AppSnackBar.success('Connected to $ssid'),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      AppSnackBar.success('Failed to connect to $ssid'),
+                    );
+                  }
+                  // restart scanning:
+                  scannerController?.start();
+                  _isProcessing = false;
+                });
+              },
+              child: const Text('Connect'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: AppColors.appColour,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 4,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                scannerController?.start();
+                _isProcessing = false;
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
 
     String fallbackType = 'text';
     if (code.startsWith('BEGIN:VCARD')) {
@@ -336,11 +504,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
       ..emails = [contacts.Email(email ?? '')];
     try {
       await contact.insert();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Contact Saved")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppSnackBar.success('Contact saved'),
+      );
     } catch (_) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppSnackBar.success('Failed!'),
+      );
     }
   }
 }

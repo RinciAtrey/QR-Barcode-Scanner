@@ -8,6 +8,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/constants/snackbar.dart';
+
 class ScannedQrPreviewScreen extends StatelessWidget {
   final _screenshotController = ScreenshotController();
   final String displayTitle;
@@ -107,7 +109,7 @@ class ScannedQrPreviewScreen extends StatelessWidget {
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: rawData));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Copied to clipboard')),
+                                AppSnackBar.success('Copied to the clipboard'),
                               );
                             },
                           ),

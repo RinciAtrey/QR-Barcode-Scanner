@@ -10,6 +10,7 @@ import '../../data/generate_code.dart';
 import '../../data/savedcode.dart';
 import '../../main.dart';
 import '../../utils/constants/colors.dart';
+import '../../utils/constants/snackbar.dart';
 
 Barcode _barcodeFromName(String name) {
   switch (name) {
@@ -52,19 +53,65 @@ class _MyCodesState extends State<MyCodes> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete all codes?', style: TextStyle(color: Colors.white),),
-        content: const Text('This will remove every saved code.'),
+        backgroundColor: Colors.black87,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 8,
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber,color: AppColors.appColour, ),
+            SizedBox(width: 8),
+            Text(
+              'Delete all codes?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will remove every saved code.',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true),  child: const Text('Delete')),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white, backgroundColor: AppColors.appColour,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 4,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
+
     if (ok == true) {
       await _box.clear();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All codes deleted')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        AppSnackBar.success('All codes deleted'),
+      );
+
     }
   }
+
 
   @override
   void initState() {
@@ -219,7 +266,8 @@ class _MyCodesState extends State<MyCodes> {
                         children: [
                           Text(
                             "No saved codes yet.",
-                            style: TextStyle(fontSize: mq.width * 0.045),
+                            style: TextStyle(fontSize: mq.width * 0.045,
+                              color: Theme.of(context).colorScheme.onSurface,),
                           ),
                           SizedBox(height: mq.height * 0.02),
                           ElevatedButton.icon(

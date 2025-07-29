@@ -5,6 +5,7 @@ import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../data/scannedcode.dart';
 import '../../main.dart';
+import '../../utils/constants/snackbar.dart';
 import '../scannedBarcodePreview.dart';
 import '../scannedQrPreview.dart';
 
@@ -43,27 +44,70 @@ class _HistoryPageState extends State<HistoryPage> {
   final _box = Hive.box<ScannedCode>('scan_history');
   String _search = '';
   final TextEditingController _searchController = TextEditingController();
-
   void _deleteAll() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete all history?'),
-        content: const Text('This will remove every scanned entry.'),
+        backgroundColor: Colors.black87,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 8,
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber, color: AppColors.appColour),
+            SizedBox(width: 8),
+            Text(
+              'Delete all history?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will remove every scanned entry.',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: AppColors.appColour,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 4,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
+
     if (ok == true) {
       await _box.clear();
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All history deleted')),
+        AppSnackBar.success('All history deleted'),
       );
     }
   }
+
 
   @override
   void initState() {
@@ -205,7 +249,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 children: [
                   Text(
                     "No scanned codes yet.",
-                    style: TextStyle(fontSize: mq.width * 0.045),
+                    style: TextStyle(fontSize: mq.width * 0.045,
+                color: Theme.of(context).colorScheme.onSurface,),
                   ),
                   SizedBox(height: mq.height * 0.02),
                   ElevatedButton.icon(

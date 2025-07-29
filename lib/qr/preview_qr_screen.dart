@@ -10,6 +10,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/savedcode.dart';
+import '../utils/constants/snackbar.dart';
 
 class QRPreviewScreen extends StatelessWidget {
   final _screenshotController = ScreenshotController();
@@ -66,7 +67,7 @@ class QRPreviewScreen extends StatelessWidget {
                 data: data,
               ));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('QR code saved')),
+                AppSnackBar.success('QR code saved.'),
               );
               Navigator.of(context).popUntil((r) => r.isFirst);
             },
@@ -143,7 +144,7 @@ class QRPreviewScreen extends StatelessWidget {
                                     .join('\n');
                                 Clipboard.setData(ClipboardData(text: detailsString));
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Copied to clipboard')),
+                                  AppSnackBar.success('Copied to the clipboard'),
                                 );
                               },
                             ),

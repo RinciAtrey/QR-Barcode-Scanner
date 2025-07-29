@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 
 import '../data/savedcode.dart';
+import '../utils/constants/snackbar.dart';
 import 'generate_barcode.dart';
 import 'package:qr_barcode/utils/constants/colors.dart';
 
@@ -60,7 +61,7 @@ class PreviewBarcodeScreen extends StatelessWidget {
                 data: data,
               ));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Barcode saved')),
+                AppSnackBar.success('Barcode saved.'),
               );
               Navigator.of(context).popUntil((r) => r.isFirst);
             },
@@ -129,7 +130,7 @@ class PreviewBarcodeScreen extends StatelessWidget {
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: data));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Data copied to clipboard')),
+                                AppSnackBar.success('Copied to the clipboard'),
                               );
                             },
                           ),
