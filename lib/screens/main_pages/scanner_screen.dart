@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:wifi_iot/wifi_iot.dart';
 import '../../data/camera_data.dart';
 import '../../data/scannedcode.dart';
+import '../../qr/preview_qr_screen.dart';
 import '../../utils/constants/colors.dart';
 import '../../utils/constants/snackbar.dart';
 import '../../utils/scan_frame.dart';
@@ -24,7 +25,7 @@ class ScannerScreen extends StatefulWidget {
   State<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
+class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserver{
   bool hasPermission = false;
   bool isFlashOn = false;
   MobileScannerController? scannerController;
@@ -39,6 +40,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final box = Hive.box('settings');
     currentFacing = CameraFacingOptionX.fromKey(
       box.get('cameraFacing', defaultValue: CameraFacingOption.back.key) as String,
@@ -58,6 +60,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     Hive.box('settings')
         .listenable(keys: ['cameraFacing'])
         .removeListener(_cameraFacingListener);
@@ -138,6 +141,42 @@ class _ScannerScreenState extends State<ScannerScreen> {
     return match?.group(1) ?? '';
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (!mounted) return;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      // stop & dispose as before
+      scannerController?.stop();
+      scannerController?.dispose();
+      scannerController = null;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      final status = await Permission.camera.status;
+
+      if (status.isGranted) {
+        //If we already have a controller, just start it
+        if (scannerController != null) {
+          scannerController!.start();
+        } else {
+          //otherwise re-initialize
+          await _initScanner();
+        }
+      } else {
+        //still no permission? leave it in the "open settings" state
+        setState(() {
+          hasPermission = false;
+          _initDone = true;
+        });
+      }
+    }
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -146,33 +185,82 @@ class _ScannerScreenState extends State<ScannerScreen> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       body: _initDone
-          ? (hasPermission && scannerController != null
+          ? (hasPermission
           ? _buildScannerView(context, mq)
           : SafeArea(
         child: Center(
-          child: ElevatedButton(
-            onPressed: () => openAppSettings(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(
-                horizontal: mq.width * 0.08,
-                vertical: mq.height * 0.018,
-              ),
-            ),
-            child: Text(
-              'Open Settings',
-              style: TextStyle(fontSize: mq.width * 0.045),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: mq.width * 0.1),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.camera_alt_outlined,
+                    size: mq.width * 0.2,
+                    color: AppColors.appColour),
+                SizedBox(height: mq.height * 0.03),
+                Text(
+                  'Camera Permission Needed',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: mq.width * 0.06,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.appColour,
+                  ),
+                ),
+                SizedBox(height: mq.height * 0.015),
+                Text(
+                  'Please grant camera access in settings.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: mq.width * 0.045,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                SizedBox(height: mq.height * 0.04),
+                ElevatedButton.icon(
+                  onPressed: () => openAppSettings(),
+                  icon: Icon(Icons.settings),
+                  label: Text(
+                    'Open Settings',
+                    style: TextStyle(fontSize: mq.width * 0.045),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.appColour,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: mq.width * 0.06,
+                      vertical: mq.height * 0.018,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ))
+      )
+      )
           : const Center(child: SizedBox()),
     );
   }
 
   Widget _buildScannerView(BuildContext context, Size mq) {
     final frameSize = mq.width * 0.5;
+    if (scannerController == null) {
+      return Center(
+        child: SizedBox(
+          width: frameSize,
+          height: frameSize,
+          child: const Center(
+            child: CircularProgressIndicator(),
+
+          ),
+        ),
+      );
+    }
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -258,6 +346,17 @@ class _ScannerScreenState extends State<ScannerScreen> {
       );
     }
     if (code.startsWith(RegExp(r'https?://'))) {
+      final historyBox = Hive.box<ScannedCode>('scan_history');
+      final now = DateTime.now();
+      final timestamp =
+          '${DateFormat('dd/MM/yy').format(now)} , ${DateFormat('hh:mm a').format(now)}';
+      await historyBox.add(ScannedCode(
+        title: timestamp,
+        isQr: isQr,
+        data: code,
+        formatName: bc.format.name,
+      ));
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -322,8 +421,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
       return;
     }
 
-
     if (code.startsWith('WIFI:')) {
+      final historyBox = Hive.box<ScannedCode>('scan_history');
+      final now = DateTime.now();
+      final timestamp =
+          '${DateFormat('dd/MM/yy').format(now)} , ${DateFormat('hh:mm a').format(now)}';
+      await historyBox.add(ScannedCode(
+        title: timestamp,
+        isQr: isQr,
+        data: code,
+        formatName: bc.format.name,
+      ));
+
       final ssid = _extractWiFiValue(code, 'S');
       final pwd  = _extractWiFiValue(code, 'P');
       final auth = _extractWiFiValue(code, 'T');
@@ -413,6 +522,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ],
         ),
       );
+
+
       return;
     }
 
@@ -423,6 +534,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
     } else if (code.startsWith('http://') ||
         code.startsWith('https://')) {
       fallbackType = 'url';
+    }
+    else if (code.startsWith('WIFI:')) {
+      fallbackType = 'wifi';
     }
 
     final displayFields = <String, String>{};
@@ -440,12 +554,23 @@ class _ScannerScreenState extends State<ScannerScreen> {
       }
     } else if (fallbackType == 'url') {
       displayFields['URL'] = code;
-    } else {
+    }
+    else if (fallbackType == 'wifi') {
+      final ssid = _extractWiFiValue(code, 'S');
+      final pwd  = _extractWiFiValue(code, 'P');
+      final authRaw = _extractWiFiValue(code, 'T');
+      final auth = authRaw.isEmpty ? 'None' : authRaw;
+
+      displayFields['SSID']     = ssid;
+      displayFields['Password'] = pwd;
+      displayFields['Security'] = auth;
+    }else {
       displayFields['Text'] = code;
     }
 
     final typeLabel = {
       'contact': 'Contact',
+      'wifi': 'Wi‑Fi Network',
       'url': 'Website',
       'text': 'Text',
     }[fallbackType]!;
@@ -485,10 +610,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Future<void> _launchURL(String url) async {
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
     }
   }
+
 
   Future<void> _saveContact(String vcard) async {
     final lines = vcard.split('\n');

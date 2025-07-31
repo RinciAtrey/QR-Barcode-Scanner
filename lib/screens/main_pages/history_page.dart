@@ -3,6 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:qr_barcode/utils/constants/colors.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../ads/ad_helper.dart';
+import '../../ads/ad_units.dart';
 import '../../data/scannedcode.dart';
 import '../../main.dart';
 import '../../utils/constants/snackbar.dart';
@@ -182,191 +184,201 @@ class _HistoryPageState extends State<HistoryPage> {
           )
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: mq.width * 0.04,
-              vertical: mq.height * 0.01,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: "Search",
-                      border: InputBorder.none,
-                      fillColor: Colors.grey.shade200,
-                      filled: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: mq.width * 0.04,
-                        vertical: mq.height * 0.015,
+      body: Stack(
+        children:[ Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: mq.width * 0.04,
+                  vertical: mq.height * 0.01,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: "Search",
+                          border: InputBorder.none,
+                          fillColor: Colors.grey.shade200,
+                          filled: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: mq.width * 0.04,
+                            vertical: mq.height * 0.015,
+                          ),
+                          prefixIcon: Icon(Icons.search, color: AppColors.appColour),
+                          suffixIcon: IconButton(
+                            icon: Icon(Icons.clear, size: 20,),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          ),
+
+                        ),
+                        onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
                       ),
-                      prefixIcon: Icon(Icons.search, color: AppColors.appColour),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.clear, size: 20,),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: mq.width * 0.04,
+                  vertical: mq.height * 0.005,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${items.length}',
+                        style: TextStyle(
+                          fontSize: mq.width * 0.06,
+                          color: AppColors.appColour,
+                        ),
+                      ),
+                    ),
+                    const Divider(thickness: 1),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: items.isEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "No scanned codes yet.",
+                        style: TextStyle(fontSize: mq.width * 0.045,
+                    color: Theme.of(context).colorScheme.onSurface,),
+                      ),
+                      SizedBox(height: mq.height * 0.02),
+                      ElevatedButton.icon(
                         onPressed: () {
-                          _searchController.clear();
+                          final homeState = HomeScreen.globalKey.currentState;
+                          homeState?.switchTo(0);
                         },
-                      ),
-
-                    ),
-                    onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: mq.width * 0.04,
-              vertical: mq.height * 0.005,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '${items.length}',
-                    style: TextStyle(
-                      fontSize: mq.width * 0.06,
-                      color: AppColors.appColour,
-                    ),
-                  ),
-                ),
-                const Divider(thickness: 1),
-              ],
-            ),
-          ),
-          Expanded(
-            child: items.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "No scanned codes yet.",
-                    style: TextStyle(fontSize: mq.width * 0.045,
-                color: Theme.of(context).colorScheme.onSurface,),
-                  ),
-                  SizedBox(height: mq.height * 0.02),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      final homeState = HomeScreen.globalKey.currentState;
-                      homeState?.switchTo(0);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.appColour,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: mq.width * 0.06,
-                        vertical: mq.height * 0.015,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    icon: Icon(Icons.qr_code_scanner, size: mq.width * 0.06),
-                    label: Text(
-                      "Scan Code",
-                      style: TextStyle(fontSize: mq.width * 0.045),
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : ListView.separated(
-              padding: EdgeInsets.symmetric(
-                horizontal: mq.width * 0.04,
-                vertical: mq.height * 0.01,
-              ),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const Divider(thickness: 1),
-              itemBuilder: (context, index) {
-                final c = items[index];
-                final fields = _fieldsFromSaved(c);
-                final firstValue =
-                fields.values.isNotEmpty ? fields.values.first : '';
-
-                return Dismissible(
-                  key: ValueKey(c.key),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.redAccent,
-                    alignment: Alignment.centerRight,
-                    padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (_) => _box.delete(c.key),
-                  child: ListTile(
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: mq.width * 0.03,
-                      vertical: mq.height * 0.01,
-                    ),
-                    leading: Container(
-                      width: mq.width * 0.15,
-                      height: mq.width * 0.15,
-                      color: Colors.white,
-                      alignment: Alignment.center,
-                      child: c.isQr
-                          ? QrImageView(
-                        data: c.data,
-                        version: QrVersions.auto,
-                        size: mq.width * 0.15,
-                        backgroundColor: Colors.white,
-                      )
-                          : BarcodeWidget(
-                        data: c.data,
-                        barcode: _barcodeFromFormatName(c.formatName),
-                        width: mq.width * 0.3,
-                        height: mq.height * 0.1,
-                        drawText: false,
-                      ),
-                    ),
-                    title: Text(
-                      c.isQr ? 'QR code · ${c.title}' : 'Barcode · ${c.title}',
-                      style: TextStyle(fontSize: mq.width * 0.045),
-                    ),
-                    subtitle: Text(
-                      firstValue,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: mq.width * 0.035),
-                    ),
-                    onTap: () {
-                      final code = c.data;
-                      final fallbackType = code.startsWith('BEGIN:VCARD') ? 'Contact'
-                          : code.startsWith(RegExp(r'https?://')) ? 'Website'
-                          :                                         'Text';
-                      final fields = _fieldsFromSaved(c);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => c.isQr
-                              ? ScannedQrPreviewScreen(
-                            displayTitle:   fallbackType,
-                            rawData:        code,
-                            displayFields: fields,
-                          )
-                              : ScannedBarcodePreviewScreen(
-                            displayTitle:     fallbackType,
-                            data:             code,
-                            displayFields:    fields,
-                            barcodeSymbology: _barcodeFromFormatName(c.formatName),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.appColour,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: mq.width * 0.06,
+                            vertical: mq.height * 0.015,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                      );
-                    },
+                        icon: Icon(Icons.qr_code_scanner, size: mq.width * 0.06),
+                        label: Text(
+                          "Scan Code",
+                          style: TextStyle(fontSize: mq.width * 0.045),
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                )
+                    : ListView.separated(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: mq.width * 0.04,
+                    vertical: mq.height * 0.01,
+                  ),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const Divider(thickness: 1),
+                  itemBuilder: (context, index) {
+                    final c = items[index];
+                    final fields = _fieldsFromSaved(c);
+                    final firstValue =
+                    fields.values.isNotEmpty ? fields.values.first : '';
+
+                    return Dismissible(
+                      key: ValueKey(c.key),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        color: Colors.redAccent,
+                        alignment: Alignment.centerRight,
+                        padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      onDismissed: (_) => _box.delete(c.key),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: mq.width * 0.03,
+                          vertical: mq.height * 0.01,
+                        ),
+                        leading: Container(
+                          width: mq.width * 0.15,
+                          height: mq.width * 0.15,
+                          color: Colors.white,
+                          alignment: Alignment.center,
+                          child: c.isQr
+                              ? QrImageView(
+                            data: c.data,
+                            version: QrVersions.auto,
+                            size: mq.width * 0.15,
+                            backgroundColor: Colors.white,
+                          )
+                              : BarcodeWidget(
+                            data: c.data,
+                            barcode: _barcodeFromFormatName(c.formatName),
+                            width: mq.width * 0.3,
+                            height: mq.height * 0.1,
+                            drawText: false,
+                          ),
+                        ),
+                        title: Text(
+                          c.isQr ? 'QR code · ${c.title}' : 'Barcode · ${c.title}',
+                          style: TextStyle(fontSize: mq.width * 0.045),
+                        ),
+                        subtitle: Text(
+                          firstValue,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: mq.width * 0.035),
+                        ),
+                        onTap: () {
+                          final code = c.data;
+                          final fallbackType = code.startsWith('BEGIN:VCARD') ? 'Contact'
+                              : code.startsWith(RegExp(r'https?://')) ? 'Website'
+                              :                                         'Text';
+                          final fields = _fieldsFromSaved(c);
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => c.isQr
+                                  ? ScannedQrPreviewScreen(
+                                displayTitle:   fallbackType,
+                                rawData:        code,
+                                displayFields: fields,
+                              )
+                                  : ScannedBarcodePreviewScreen(
+                                displayTitle:     fallbackType,
+                                data:             code,
+                                displayFields:    fields,
+                                barcodeSymbology: _barcodeFromFormatName(c.formatName),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AdaptiveBannerAd(adUnitId: AdUnits.banner),
+          ),
+    ]
       ),
     );
   }

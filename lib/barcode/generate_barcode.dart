@@ -9,6 +9,9 @@ import 'package:qr_barcode/barcode/preview_barcode_screen.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../ads/ad_helper.dart';
+import '../ads/ad_units.dart';
+import '../ads/native_ad.dart';
 import '../utils/constants/colors.dart';
 
 class GenerateBarcode extends StatefulWidget {
@@ -42,23 +45,6 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
   }
 
 
-  Future<void> _shareQRCode() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final imagePath = '${directory.path}/bar_code.png';
-    final capture = await _screenshotController.capture();
-    if (capture == null) return null;
-
-    File imageFile = File(imagePath);
-    await imageFile.writeAsBytes(capture);
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(imagePath)],
-        text: 'Share a OR Code',
-      ),
-    );
-  }
-
-
 
   String _barcodeData = '';
   final List<BarcodeOption> _barcodeTypes= [
@@ -80,17 +66,11 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
 
   }
 
-  void _copyToClipboard(){
-    Clipboard.setData(ClipboardData(text: _barcodeData));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Barcode Copied")));
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<int> _allowedBarcodeIndices = [0, 6, 7];
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.appColour,
       appBar: AppBar(
           backgroundColor: AppColors.appColour,
@@ -117,87 +97,97 @@ class _GenerateBarcodeState extends State<GenerateBarcode> {
         ],
       ),
       body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                color: Colors.white,
-                elevation: 4,
-                  child: Padding(padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text("Enter Product Data",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color:  AppColors.appColour,
-                      ),
-                      ),
-                      SizedBox(height: 16,),
-                      TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: "eg. 123456789",
-                          labelText: "Barcode Data",
-                            errorText: _errorText,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          suffixIcon: IconButton(onPressed: (){
-                            setState(() {
-                              _textController.clear();
-                              _barcodeData = '';
-                            });
-                          }, icon: Icon(Icons.clear))
-                        ),
-                        onChanged: (value) {
-                          _generateBarCode();
-                        },
-                      ),
-                      SizedBox(height: 16,),
-                      Text("Barcode Type",
+          height: double.infinity,
+          width: double.infinity,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  color: Colors.white,
+                  elevation: 4,
+                    child: Padding(padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Enter Product Data",
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color:  AppColors.appColour,
                         ),
-                      ),
-                      SizedBox(height: 8,),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              isExpanded: true,
-                                value: _selectedBarcodeIndex,
-                                icon: Icon(Icons.arrow_drop_down),
-                                items: _allowedBarcodeIndices.map((i) {
-                                  return DropdownMenuItem<int>(
-                                    value: i,
-                                    child: Text(_barcodeTypes[i].name),
-                                  );
-                                }).toList(),
-                                onChanged: (int? newValue){
-                                if(newValue!= null){
-                                  setState(() {
-                                    _selectedBarcodeIndex=newValue;
-                                  });
-                                }
-                                })),
-                      )
-                    ],
-                  ),),
-              ),
-            ],
+                        SizedBox(height: 16,),
+                        TextField(
+                          controller: _textController,
+                          decoration: InputDecoration(
+                            hintText: "eg. 123456789",
+                            labelText: "Barcode Data",
+                              errorText: _errorText,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            suffixIcon: IconButton(onPressed: (){
+                              setState(() {
+                                _textController.clear();
+                                _barcodeData = '';
+                              });
+                            }, icon: Icon(Icons.clear))
+                          ),
+                          onChanged: (value) {
+                            _generateBarCode();
+                          },
+                        ),
+                        SizedBox(height: 16,),
+                        Text("Barcode Type",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color:  AppColors.appColour,
+                          ),
+                        ),
+                        SizedBox(height: 8,),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                  value: _selectedBarcodeIndex,
+                                  icon: Icon(Icons.arrow_drop_down),
+                                  items: _allowedBarcodeIndices.map((i) {
+                                    return DropdownMenuItem<int>(
+                                      value: i,
+                                      child: Text(_barcodeTypes[i].name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (int? newValue){
+                                  if(newValue!= null){
+                                    setState(() {
+                                      _selectedBarcodeIndex=newValue;
+                                    });
+                                  }
+                                  })),
+                        )
+                      ],
+                    ),),
+                ),
+              ],
+            ),
           ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            NativeAds(),
+            SizedBox(height: 8),
+            AdaptiveBannerAd(adUnitId: AdUnits.banner),
+          ],
         ),
       ),
     );

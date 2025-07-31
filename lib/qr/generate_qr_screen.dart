@@ -1,12 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:qr_barcode/ads/native_ad.dart';
 import 'package:qr_barcode/qr/preview_qr_screen.dart';
 import 'package:qr_barcode/qr/qr_ui.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:share_plus/share_plus.dart';
-
+import '../ads/ad_helper.dart';
+import '../ads/ad_units.dart';
 import '../utils/constants/colors.dart';
 import 'qr_code_type.dart';
 
@@ -19,16 +17,27 @@ class QrGeneratorScreen extends StatefulWidget {
 }
 
 class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
+  final _formKey = GlobalKey<FormState>();
+  bool _isValid = false;
+
   late CodeType selectedType;
+  BannerAd? _bannerAd;
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     selectedType = widget.initialType;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    });
   }
 
   final TextEditingController _textEditingController = TextEditingController();
-  final ScreenshotController _screenshotController = ScreenshotController();
   String qrData = '';
 
   final Map<String, TextEditingController> _controllers = {
@@ -104,17 +113,11 @@ END:VCARD''';
     return m;
   }
 
-
-  Future<void> _shareQRCode() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = '${dir.path}/qr_code.png';
-    final capture = await _screenshotController.capture();
-    if (capture == null) return;
-
-    final file = File(path)..writeAsBytesSync(capture);
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(path)], text: 'QR Code'),
-    );
+  void _onFieldChanged(String _) {
+    setState(() {
+      _isValid = _formKey.currentState?.validate() ?? false;
+      qrData  = _generateQRData();
+    });
   }
 
   @override
@@ -124,13 +127,13 @@ END:VCARD''';
       case CodeType.Text:
         formWidget = TextForm(
           _textEditingController,
-              (v) => setState(() => qrData = _generateQRData()),
+          _onFieldChanged,
         );
         break;
       case CodeType.Website:
         formWidget = UrlForm(
           _controllers['url']!,
-              (v) => setState(() => qrData = _generateQRData()),
+          _onFieldChanged,
         );
         break;
       case CodeType.Contact:
@@ -140,25 +143,26 @@ END:VCARD''';
             'email': _controllers['email']!,
             'phone': _controllers['phone']!,
           },
-              (v) => setState(() => qrData = _generateQRData()),
+          _onFieldChanged,
         );
         break;
       case CodeType.Wifi:
         formWidget = WifiForm(
           _controllers['ssid']!,
           _controllers['wifipass']!,
-              (v) => setState(() => qrData = _generateQRData()),
+          _onFieldChanged,
         );
         break;
       case CodeType.Call:
         formWidget = CallForm(
           _controllers['call']!,
-              (v) => setState(() => qrData = _generateQRData()),
+          _onFieldChanged,
         );
         break;
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.appColour,
       appBar: AppBar(
         backgroundColor: AppColors.appColour,
@@ -168,7 +172,12 @@ END:VCARD''';
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: () {
+            style: TextButton.styleFrom(
+              foregroundColor:   Colors.white,        //text color when enabled
+              disabledForegroundColor: Colors.grey,   //text when disabled
+            ),
+            onPressed: _isValid
+              ? () {
               final data = _generateQRData();
                if (data.isEmpty) return;
               final displayFields = _makeDisplayFields();
@@ -181,35 +190,50 @@ END:VCARD''';
                   ),
                 ),
               );
-            },
+            } : null,
             child: const Text(
               'Create',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(fontSize: 16),
             ),
           ),
         ],
       ),
-      body: Container(
-        padding: const EdgeInsets.all(20),
+      body: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Card(
-              color: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    formWidget,
+                    Card(
+                      color: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: formWidget,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            NativeAds(),
+            SizedBox(height: 8),
+            AdaptiveBannerAd(adUnitId: AdUnits.banner),
           ],
         ),
       ),

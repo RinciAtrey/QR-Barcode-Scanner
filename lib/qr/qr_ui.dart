@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 
 class TextForm extends StatelessWidget {
@@ -9,7 +10,7 @@ class TextForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
-    return TextField(
+    return TextFormField(
       controller: textController,
       decoration: const InputDecoration(
         labelText: 'TEXT',
@@ -17,6 +18,10 @@ class TextForm extends StatelessWidget {
       ),
       maxLines: null,
       onChanged: onChanged,
+      validator: (s) =>
+      (s == null || s.trim().isEmpty)
+          ? 'Please enter some text'
+          : null,
     );
   }
 }
@@ -30,7 +35,7 @@ class UrlForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
-    return TextField(
+    return TextFormField(
       controller: urlController,
       decoration: const InputDecoration(
         labelText: 'LINK',
@@ -39,6 +44,18 @@ class UrlForm extends StatelessWidget {
       ),
       keyboardType: TextInputType.url,
       onChanged: onChanged,
+      validator: (s) {
+        if (s == null || s.trim().isEmpty) {
+          return 'Please enter a URL';
+        }
+        final raw = s.trim();
+        final uri = Uri.tryParse(raw);
+        if (uri == null || uri.host.isEmpty) {
+          return 'Enter a valid URL';
+        }
+        return null;
+      },
+
     );
   }
 }
@@ -52,37 +69,47 @@ class ContactForm extends StatelessWidget {
   Widget build(BuildContext ctx) {
     return Column(
       children: [
-        TextField(
+        TextFormField(
           controller: ctrls['name']!,
           decoration: const InputDecoration(
-            labelText: 'FIRST NAME',
+            labelText: 'Name',
             border: OutlineInputBorder(),
           ),
           onChanged: onChanged,
+          validator: (s) =>
+          (s == null || s.trim().isEmpty)
+              ? 'Please enter some text'
+              : null,
         ),
         const SizedBox(height: 12),
-        TextField(
+        TextFormField(
           controller: ctrls['email']!,
           decoration: const InputDecoration(
-            labelText: 'EMAIL',
+            labelText: 'Email',
             border: OutlineInputBorder(),
           ),
           onChanged: onChanged,
+          validator: (s) {
+            if (s == null || s.trim().isEmpty) return 'Required';
+            return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(s)
+                ? null
+                : 'Invalid email';
+          },
         ),
         const SizedBox(height: 12),
-        TextField(
+        TextFormField(
           controller: ctrls['phone']!,
           decoration: InputDecoration(
-            labelText: 'WORK PHONE',
+            labelText: 'Phone',
             border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: () {
-              },
-            ),
           ),
           keyboardType: TextInputType.phone,
           onChanged: onChanged,
+          validator: (s) =>
+          (s == null || !RegExp(r'^\+?\d{7,15}$').hasMatch(s))
+              ? 'Invalid phone'
+              : null,
+
         ),
       ],
     );
@@ -99,17 +126,25 @@ class WifiForm extends StatelessWidget {
   Widget build(BuildContext ctx) {
     return Column(
       children: [
-        TextField(
+        TextFormField(
           controller: ssidCtrl,
           decoration: const InputDecoration(labelText: 'Network Name', border: OutlineInputBorder()),
-          onChanged: (_) => onChanged(''), // trigger regeneration
+          onChanged: (_) => onChanged(''),
+          validator: (s) =>
+          (s == null || s.trim().isEmpty)
+              ? 'Please enter some text'
+              : null,
         ),
         const SizedBox(height: 12),
-        TextField(
+        TextFormField(
           controller: passCtrl,
           decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
           obscureText: true,
           onChanged: (_) => onChanged(''),
+          validator: (s) =>
+          (s == null || s.trim().isEmpty)
+              ? 'Please enter some text'
+              : null,
         ),
       ],
     );
@@ -124,11 +159,16 @@ class CallForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext ctx) {
-    return TextField(
+    return TextFormField(
       controller: phoneCtrl,
       decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
       keyboardType: TextInputType.phone,
       onChanged: (_) => onChanged(''),
+      validator: (s) =>
+      (s == null || !RegExp(r'^\+?\d{7,15}$').hasMatch(s))
+          ? 'Invalid phone'
+          : null,
+
     );
   }
 }

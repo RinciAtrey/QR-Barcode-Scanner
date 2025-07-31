@@ -115,7 +115,7 @@ class _GenerateCodeState extends State<GenerateCode> {
       //   },
       // )
       _TileData(
-        icon: Icons.lock,
+        icon: Icons.dataset_outlined,
         label: 'Data Matrix',
         action: () {
           Navigator.push(context,
@@ -123,7 +123,7 @@ class _GenerateCodeState extends State<GenerateCode> {
         },
       ),
       _TileData(
-        icon: Icons.lock,
+        icon: Icons.perm_data_setting_outlined,
         label: 'PDF417',
         action: () {
           Navigator.push(context,

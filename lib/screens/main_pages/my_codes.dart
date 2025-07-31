@@ -4,11 +4,12 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:qr_barcode/qr/preview_qr_screen.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../ads/ad_helper.dart';
+import '../../ads/ad_units.dart';
 import '../../barcode/generate_barcode.dart';
 import '../../barcode/preview_barcode_screen.dart';
 import '../../data/generate_code.dart';
 import '../../data/savedcode.dart';
-import '../../main.dart';
 import '../../utils/constants/colors.dart';
 import '../../utils/constants/snackbar.dart';
 
@@ -159,249 +160,261 @@ class _MyCodesState extends State<MyCodes> {
             ),
           ],
         ),
-        body: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: mq.width * 0.04,
-                vertical: mq.height * 0.01,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: "Search",
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: mq.width * 0.04,
-                          vertical: mq.height * 0.015,
-                        ),
-                        fillColor: Colors.grey.shade200,
-                        filled: true,
-                        prefixIcon: Icon(Icons.search, color: AppColors.appColour),
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.clear, size: 20,),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        ),
-                      ),
-                      onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ValueListenableBuilder<Box<SavedCode>>(
-              valueListenable: _box.listenable(),
-              builder: (_, box, __) {
-                var codes = box.values.toList()
-                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                if (_search.isNotEmpty) {
-                  final s = _search;
-                  codes = codes.where((c) {
-                    final title = ((c.isQr ? 'QR code · ' : 'Barcode · ') + c.title).toLowerCase();
-                    final data  = c.data.toLowerCase();
-                    final extra = c.isQr
-                        ? _fieldsFromSaved(c).values.first.toLowerCase()
-                        : '';
-                    return title.contains(s) || data.contains(s) || extra.contains(s);
-                  }).toList();
-                }
-                return Padding(
+        body: Stack(
+          children:[ Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: mq.width * 0.04,
-                    vertical: mq.height * 0.005,
+                    vertical: mq.height * 0.01,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: Row(
                     children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${codes.length}',
-                          style: TextStyle(
-                            fontSize: mq.width * 0.06,
-                            color: AppColors.appColour,
+                      Expanded(
+                        child: TextFormField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: "Search",
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: mq.width * 0.04,
+                              vertical: mq.height * 0.015,
+                            ),
+                            fillColor: Colors.grey.shade200,
+                            filled: true,
+                            prefixIcon: Icon(Icons.search, color: AppColors.appColour),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.clear, size: 20,),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            ),
                           ),
+                          onChanged: (v) => setState(() => _search = v.trim().toLowerCase()),
                         ),
                       ),
-                      const Divider(thickness: 1),
+
+
                     ],
                   ),
-                );
-              },
-            ),
-            Expanded(
-              child: ValueListenableBuilder(
-                valueListenable: _box.listenable(),
-                builder: (ctx, Box<SavedCode> box, _) {
-                  // get and sort
-                  var codes = box.values.toList()
-                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-                  if (_search.isNotEmpty) {
-                    final searchLower = _search;
-                    codes = codes.where((c) {
-                      final displayTitle = (c.isQr ? 'QR code · ' : 'Barcode · ') + c.title;
-                      final titleLower   = displayTitle.toLowerCase();
-                      final dataLower    = c.data.toLowerCase();
-
-                      final firstValueLower = c.isQr
-                          ? (_fieldsFromSaved(c).values.first.toLowerCase())
-                          : '';
-                      return titleLower.contains(searchLower)
-                          || dataLower.contains(searchLower)
-                          || firstValueLower.contains(searchLower);
-                    }).toList();
-                  }
-
-                  if (codes.isEmpty) {
-                    return Center(
+                ),
+                ValueListenableBuilder<Box<SavedCode>>(
+                  valueListenable: _box.listenable(),
+                  builder: (_, box, __) {
+                    var codes = box.values.toList()
+                      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                    if (_search.isNotEmpty) {
+                      final s = _search;
+                      codes = codes.where((c) {
+                        final title = ((c.isQr ? 'QR code · ' : 'Barcode · ') + c.title).toLowerCase();
+                        final data  = c.data.toLowerCase();
+                        final extra = c.isQr
+                            ? _fieldsFromSaved(c).values.first.toLowerCase()
+                            : '';
+                        return title.contains(s) || data.contains(s) || extra.contains(s);
+                      }).toList();
+                    }
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: mq.width * 0.04,
+                        vertical: mq.height * 0.005,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            "No saved codes yet.",
-                            style: TextStyle(fontSize: mq.width * 0.045,
-                              color: Theme.of(context).colorScheme.onSurface,),
-                          ),
-                          SizedBox(height: mq.height * 0.02),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => const GenerateCode(),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.appColour,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: mq.width * 0.06,
-                                vertical: mq.height * 0.015,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '${codes.length}',
+                              style: TextStyle(
+                                fontSize: mq.width * 0.06,
+                                color: AppColors.appColour,
                               ),
                             ),
-                            icon: Icon(Icons.add_circle_outline, size: mq.width * 0.06),
-                            label: Text(
-                              "Create code",
-                              style: TextStyle(fontSize: mq.width * 0.045),
-                            ),
                           ),
+                          const Divider(thickness: 1),
                         ],
                       ),
                     );
-                  }
-                  return
-                    Expanded(
-                    child: ListView.separated(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: mq.width * 0.02,
-                        vertical: mq.height * 0.01,
-                      ),
-                      itemCount: codes.length,
-                      separatorBuilder: (_, __) => Divider(thickness: 1),
-                      itemBuilder: (context, index) {
-                        final c = codes[index];
-                        return Dismissible(
-                          key: ValueKey(c.key),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            color: Colors.redAccent,
-                            alignment: Alignment.centerRight,
-                            padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
-                            child: Icon(Icons.delete, color: Colors.white),
-                          ),
-                          onDismissed: (_) {
-                            box.delete(c.key);
-                          },
-                          child: ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: mq.width * 0.03,
-                              vertical: mq.height * 0.01,
-                            ),
-                            leading: Container(
-                              width: mq.width * 0.15,
-                              height: mq.width * 0.15,
-                              color: Colors.white,
-                              alignment: Alignment.center,
-                              child: c.isQr
-                                  ? QrImageView(
-                                data: c.data,
-                                version: QrVersions.auto,
-                                size: mq.width * 0.15,
-                                backgroundColor: Colors.white,
-                              )
-                                  : BarcodeWidget(
-                                data: c.data,
-                                barcode: _barcodeFromName(c.title),
-                                width: mq.width * 0.3,
-                                height: mq.height * 0.1,
-                                drawText: false,
-                                color: Colors.black,
-                                backgroundColor: Colors.white,
+                  },
+                ),
+                Expanded(
+                  child: ValueListenableBuilder(
+                    valueListenable: _box.listenable(),
+                    builder: (ctx, Box<SavedCode> box, _) {
+                      // get and sort
+                      var codes = box.values.toList()
+                        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
+                      if (_search.isNotEmpty) {
+                        final searchLower = _search;
+                        codes = codes.where((c) {
+                          final displayTitle = (c.isQr ? 'QR code · ' : 'Barcode · ') + c.title;
+                          final titleLower   = displayTitle.toLowerCase();
+                          final dataLower    = c.data.toLowerCase();
+          
+                          final firstValueLower = c.isQr
+                              ? (_fieldsFromSaved(c).values.first.toLowerCase())
+                              : '';
+                          return titleLower.contains(searchLower)
+                              || dataLower.contains(searchLower)
+                              || firstValueLower.contains(searchLower);
+                        }).toList();
+                      }
+          
+                      if (codes.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "No saved codes yet.",
+                                style: TextStyle(fontSize: mq.width * 0.045,
+                                  color: Theme.of(context).colorScheme.onSurface,),
                               ),
-                            ),
-                            title: Text(
-                              c.isQr ? 'QR code · ${c.title}' : 'Barcode · ${c.title}',
-                              style: TextStyle(fontSize: mq.width * 0.045),
-                            ),
-                            subtitle: Builder(builder: (_) {
-                              final fields = _fieldsFromSaved(c);
-                              final firstValue = fields.values.isNotEmpty ? fields.values.first : '';
-                              return Text(
-                                firstValue,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: mq.width * 0.035),
-                              );
-                            }),
-                            onTap: () {
-                              final fields = c.isQr
-                                  ? _fieldsFromQr(c)
-                                  : <String, String>{'Data': c.data};
-                              if (c.isQr) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => QRPreviewScreen(
-                                      title: '${c.title}',
-                                      data: c.data,
-                                      displayFields: fields,
-                                    ),
+                              SizedBox(height: mq.height * 0.02),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => const GenerateCode(),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.appColour,
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: mq.width * 0.06,
+                                    vertical: mq.height * 0.015,
                                   ),
-                                );
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => PreviewBarcodeScreen(
-                                      type: BarcodeOption(
-                                          c.title, _barcodeFromName(c.title)),
-                                      data: c.data,
-                                      displayFields: fields,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                );
-                              }
-                            },
+                                ),
+                                icon: Icon(Icons.add_circle_outline, size: mq.width * 0.06),
+                                label: Text(
+                                  "Create code",
+                                  style: TextStyle(fontSize: mq.width * 0.045),
+                                ),
+                              ),
+                            ],
                           ),
                         );
-                      },
-                    ),
-                  );
-                },
-              ),
+                      }
+                      return
+                         ListView.separated(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: mq.width * 0.02,
+                            vertical: mq.height * 0.01,
+                          ),
+                          itemCount: codes.length,
+                          separatorBuilder: (_, __) => Divider(thickness: 1),
+                          itemBuilder: (context, index) {
+                            final c = codes[index];
+                            return Dismissible(
+                              key: ValueKey(c.key),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                color: Colors.redAccent,
+                                alignment: Alignment.centerRight,
+                                padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
+                                child: Icon(Icons.delete, color: Colors.white),
+                              ),
+                              onDismissed: (_) {
+                                box.delete(c.key);
+                              },
+                              child: ListTile(
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: mq.width * 0.03,
+                                  vertical: mq.height * 0.01,
+                                ),
+                                leading: Container(
+                                  width: mq.width * 0.15,
+                                  height: mq.width * 0.15,
+                                  color: Colors.white,
+                                  alignment: Alignment.center,
+                                  child: c.isQr
+                                      ? QrImageView(
+                                    data: c.data,
+                                    version: QrVersions.auto,
+                                    size: mq.width * 0.15,
+                                    backgroundColor: Colors.white,
+                                  )
+                                      : BarcodeWidget(
+                                    data: c.data,
+                                    barcode: _barcodeFromName(c.title),
+                                    width: mq.width * 0.3,
+                                    height: mq.height * 0.1,
+                                    drawText: false,
+                                    color: Colors.black,
+                                    backgroundColor: Colors.white,
+                                  ),
+                                ),
+                                title: Text(
+                                  c.isQr ? 'QR code · ${c.title}' : 'Barcode · ${c.title}',
+                                  style: TextStyle(fontSize: mq.width * 0.045),
+                                ),
+                                subtitle: Builder(builder: (_) {
+                                  final fields = _fieldsFromSaved(c);
+                                  final firstValue = fields.values.isNotEmpty ? fields.values.first : '';
+                                  return Text(
+                                    firstValue,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: mq.width * 0.035),
+                                  );
+                                }),
+                                onTap: () {
+                                  final fields = c.isQr
+                                      ? _fieldsFromQr(c)
+                                      : <String, String>{'Data': c.data};
+                                  if (c.isQr) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => QRPreviewScreen(
+                                          title: '${c.title}',
+                                          data: c.data,
+                                          displayFields: fields,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PreviewBarcodeScreen(
+                                          type: BarcodeOption(
+                                              c.title, _barcodeFromName(c.title)),
+                                          data: c.data,
+                                          displayFields: fields,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        )
+                      ;
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AdaptiveBannerAd(adUnitId: AdUnits.banner),
+            ),
+
+          ]
         ),
       ),
     );
