@@ -9,6 +9,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../ads/ad_helper.dart';
+import '../ads/ad_units.dart';
+import '../ads/native_ad.dart';
 import '../data/savedcode.dart';
 import '../utils/constants/snackbar.dart';
 
@@ -185,6 +188,14 @@ class QRPreviewScreen extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            AdaptiveBannerAd(adUnitId: AdUnits.banner2),
+          ],
         ),
       ),
     );

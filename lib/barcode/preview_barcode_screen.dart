@@ -7,6 +7,8 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 
+import '../ads/ad_helper.dart';
+import '../ads/ad_units.dart';
 import '../data/savedcode.dart';
 import '../utils/constants/snackbar.dart';
 import 'generate_barcode.dart';
@@ -164,6 +166,14 @@ class PreviewBarcodeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            AdaptiveBannerAd(adUnitId: AdUnits.banner2),
           ],
         ),
       ),
