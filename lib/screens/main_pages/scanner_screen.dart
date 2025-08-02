@@ -147,9 +147,7 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      // stop & dispose as before
       scannerController?.stop();
-      scannerController?.dispose();
       scannerController = null;
     }
 
@@ -254,12 +252,23 @@ class _ScannerScreenState extends State<ScannerScreen> with WidgetsBindingObserv
         child: SizedBox(
           width: frameSize,
           height: frameSize,
-          child: const Center(
-            child: CircularProgressIndicator(),
-
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 8),
+              const Text(
+                'Please wait',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       );
+
     }
     return Stack(
       alignment: Alignment.center,
