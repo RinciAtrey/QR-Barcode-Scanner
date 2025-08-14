@@ -30,6 +30,11 @@ Whether you need to quickly scan a code, store it for later, or generate your ow
 
 📲 **Download Now**:  [ App Link](https://play.google.com/store/apps/details?id=com.quickappsra.qr_barcode) 
 
+---
+
+## ✨ Scan this code to download
+
+<img width="150" height="150" alt="qr- QRBar" src="https://github.com/user-attachments/assets/5f7f8c13-23b7-4823-bef3-704b61ae112c" />
 
 ---
 
@@ -44,6 +49,7 @@ Whether you need to quickly scan a code, store it for later, or generate your ow
 
 
 💡 **Tip:** Try creating your own QR code for a link, text, or Wi-Fi password and share it instantly!
+
 
 
 
