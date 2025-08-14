@@ -28,7 +28,8 @@ Whether you need to quickly scan a code, store it for later, or generate your ow
 
 ## 🚀 Live App
 
-📲 **Download Now**: (https://play.google.com/store/apps/details?id=com.quickappsra.qr_barcode) 
+📲 **Download Now**:  [ App Link](https://play.google.com/store/apps/details?id=com.quickappsra.qr_barcode) 
+
 
 ---
 
@@ -43,5 +44,6 @@ Whether you need to quickly scan a code, store it for later, or generate your ow
 
 
 💡 **Tip:** Try creating your own QR code for a link, text, or Wi-Fi password and share it instantly!
+
 
 
